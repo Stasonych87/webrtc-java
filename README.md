@@ -3,8 +3,9 @@
 
 ## webrtc-java
 
-Java native interface implementation based on the free, open [WebRTC](https://webrtc.org) project. The goal of this project is to enable development of RTC applications for desktop platforms running Java. This project wraps the [WebRTC Native API](https://webrtc.github.io/webrtc-org/native-code/native-apis) and is similar to the [JS API](https://w3c.github.io/webrtc-pc).
+Реализация собственного интерфейса Java, основанная на бесплатном, открытом [WebRTC](https://webrtc.org ) проект. Цель этого проекта - обеспечить разработку приложений RTC для настольных платформ, работающих под управлением Java. Этот проект обертывает [WebRTC Native API](https://webrtc.github.io/webrtc-org/native-code/native-apis ) и похож на [JS API](https://w3c.github.io/webrtc-pc ).
 
+<!--
 ### Maven
 
 ```xml
@@ -23,8 +24,10 @@ implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.7.0"
 implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.7.0", classifier: "macos-x86_64"
 implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.7.0", classifier: "linux-x86_64"
 ```
+-->
 
-### Supported Platforms
+
+### Подерживаемые платформы
 Maven Central artifacts contain native libraries that can be loaded on the following platforms:
 
 <table>
@@ -42,13 +45,13 @@ Maven Central artifacts contain native libraries that can be loaded on the follo
   </tr>
 </table>
 
-The native libraries were build with WebRTC branch M99/4844.
+Нативные библиотеки созданы с использованием ветки WebRTC M112/5615.
 
-### Build Notes
+### Примечание к сборке
 
-In order to build the native code, be sure to install the prerequisite software (follow the links):
+Чтобы создать машинный код, обязательно установите необходимое программное обеспечение (см. ссылки)
 
-**Note**: You don't have to install the Depot Tools, the build script will do that for you.
+**Примечание**: Вам не нужно устанавливать инструменты Depot Tools, сценарий сборки сделает это за вас.
 
 <table>
   <tr>
@@ -65,18 +68,23 @@ In order to build the native code, be sure to install the prerequisite software 
   </tr>
 </table>
 
-Assuming you have all the prerequisites installed for your OS, run:
+Если у вас установлены все необходимые компоненты для вашей операционной системы, запустите:
 
 ```
 mvn install
 ```
 
-On the first run, the WebRTC source tree will be loaded into the `/<user home>/webrtc` directory. This will take a while and require about 12 GB of disk space.
-
+При первом запуске, дерево исходников WebRTC будет загружено в каталог, указанный в параметре webrtc.src.dir. По умолчанию параметр имеет значение `/<user home>/webrtc`.
+Его можно изменить, если например на диске C мало места, т.к. потребуется примерно 12 Гб свободного места
 #### Build Parameters
 
-| Parameter          | Description                                            | Default Value               |
-| ------------------ | ------------------------------------------------------ |-----------------------------|
-| webrtc.branch      | The WebRTC branch to checkout.                         | branch-heads/4844           |
-| webrtc.src.dir     | The absolute checkout path for the WebRTC source tree. | /\<user_home\>/webrtc       |
-| webrtc.install.dir | The install path for the compiled WebRTC library. Is also used to link against a pre-compiled WebRTC library to reduce build time. | /\<user_home\>/webrtc/build |
+| Parameter          | Description                                                                                                                                                                | Default Value               |
+| ------------------ |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|
+| webrtc.branch      | Чекаут ветки WebRTC, которую будем собирать.                                                                                                                               | branch-heads/5615           |
+| webrtc.src.dir     | Абсолютный путь к каталогу в который будет выгружено дерево исходников WebRTC.                                                                                             | /\<user_home\>/webrtc       |
+| webrtc.install.dir | Путь установки для скомпилированной библиотеки WebRTC. Также используется для привязки к предварительно скомпилированной библиотеке WebRTC для сокращения времени сборки.  | /\<user_home\>/webrtc/build |
+
+по идее можно так использовать при запуске mvn
+```
+mvn install "-Dwebrtc.src.dir=D:/testDir/webrtc" "-Dwebrtc.install.dir=D:/testDir/webrtc/build"
+```

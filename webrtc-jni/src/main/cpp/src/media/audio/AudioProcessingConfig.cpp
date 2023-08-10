@@ -33,17 +33,13 @@ namespace jni
 			const auto javaEchoCancellerClass = JavaClasses::get<JavaEchoCancellerClass>(env);
 			const auto javaHighPassFilterClass = JavaClasses::get<JavaHighPassFilterClass>(env);
 			const auto javaNoiseSuppressionClass = JavaClasses::get<JavaNoiseSuppressionClass>(env);
-			const auto javaResidualEchoDetectorClass = JavaClasses::get<JavaResidualEchoDetectorClass>(env);
 			const auto javaTransientSuppressionClass = JavaClasses::get<JavaTransientSuppressionClass>(env);
-			const auto javaVoiceDetectionClass = JavaClasses::get<JavaVoiceDetectionClass>(env);
 			
 			JavaObject obj(env, javaType);
 			JavaObject echoCanceller(env, obj.getObject(javaClass->echoCanceller));
 			JavaObject highPassFilter(env, obj.getObject(javaClass->highPassFilter));
 			JavaObject noiseSuppression(env, obj.getObject(javaClass->noiseSuppression));
-			JavaObject residualEchoDetector(env, obj.getObject(javaClass->residualEchoDetector));
 			JavaObject transientSuppression(env, obj.getObject(javaClass->transientSuppression));
-			JavaObject voiceDetection(env, obj.getObject(javaClass->voiceDetection));
 
 			webrtc::AudioProcessing::Config config;
 			
@@ -62,11 +58,7 @@ namespace jni
 				config.noise_suppression.level = jni::JavaEnums::toNative<webrtc::AudioProcessing::Config::NoiseSuppression::Level>(env, nsLevel);
 			}
 
-			config.residual_echo_detector.enabled = residualEchoDetector.getBoolean(javaResidualEchoDetectorClass->enabled);
-
 			config.transient_suppression.enabled = transientSuppression.getBoolean(javaTransientSuppressionClass->enabled);
-
-			config.voice_detection.enabled = voiceDetection.getBoolean(javaVoiceDetectionClass->enabled);
 			
 			return config;
 		}
@@ -86,10 +78,15 @@ namespace jni
 			gainController.enabled = gainControl.getBoolean(javaGainControlClass->enabled);
 			gainController.fixed_digital.gain_db = gainControlFixedDigital.getFloat(javaGainControlFixedDigitalClass->gainDb);
 			gainController.adaptive_digital.enabled = gainControlAdaptiveDigital.getBoolean(javaGainControlAdaptiveDigitalClass->enabled);
-			gainController.adaptive_digital.dry_run = gainControlAdaptiveDigital.getBoolean(javaGainControlAdaptiveDigitalClass->dryRun);
-			gainController.adaptive_digital.vad_reset_period_ms = gainControlAdaptiveDigital.getInt(javaGainControlAdaptiveDigitalClass->vadResetPeriodMs);
-			gainController.adaptive_digital.adjacent_speech_frames_threshold = gainControlAdaptiveDigital.getInt(javaGainControlAdaptiveDigitalClass->adjacentSpeechFramesThreshold);
-			gainController.adaptive_digital.max_gain_change_db_per_second = gainControlAdaptiveDigital.getFloat(javaGainControlAdaptiveDigitalClass->maxGainChangeDbPerSecond);
+            // TODO(bugs.webrtc.org/7494): Remove `dry_run`.
+            // When true, the adaptive digital controller runs but the signal is not
+            // modified. dfba28e30eaa791147c98e34ef0476e99eb93f5e
+//			gainController.adaptive_digital.dry_run = gainControlAdaptiveDigital.getBoolean(javaGainControlAdaptiveDigitalClass->dryRun); todo
+            // TODO(bugs.webrtc.org/7494): Hard-code and remove parameter below. dfba28e30eaa791147c98e34ef0476e99eb93f5e
+//			gainController.adaptive_digital.vad_reset_period_ms = gainControlAdaptiveDigital.getInt(javaGainControlAdaptiveDigitalClass->vadResetPeriodMs); todo
+            // TODO(bugs.webrtc.org/7494): Hard-code and remove parameter below. dfba28e30eaa791147c98e34ef0476e99eb93f5e
+//			gainController.adaptive_digital.adjacent_speech_frames_threshold = gainControlAdaptiveDigital.getInt(javaGainControlAdaptiveDigitalClass->adjacentSpeechFramesThreshold); todo
+            gainController.adaptive_digital.max_gain_change_db_per_second = gainControlAdaptiveDigital.getFloat(javaGainControlAdaptiveDigitalClass->maxGainChangeDbPerSecond);
 			gainController.adaptive_digital.max_output_noise_level_dbfs = gainControlAdaptiveDigital.getFloat(javaGainControlAdaptiveDigitalClass->maxOutputNoiseLevelDbfs);
 
 			return gainController;
@@ -103,9 +100,7 @@ namespace jni
 			gainControl = GetFieldID(env, cls, "gainControl", "L" PKG_AUDIO "AudioProcessingConfig$GainControl;");
 			highPassFilter = GetFieldID(env, cls, "highPassFilter", "L" PKG_AUDIO "AudioProcessingConfig$HighPassFilter;");
 			noiseSuppression = GetFieldID(env, cls, "noiseSuppression", "L" PKG_AUDIO "AudioProcessingConfig$NoiseSuppression;");
-			residualEchoDetector = GetFieldID(env, cls, "residualEchoDetector", "L" PKG_AUDIO "AudioProcessingConfig$ResidualEchoDetector;");
 			transientSuppression = GetFieldID(env, cls, "transientSuppression", "L" PKG_AUDIO "AudioProcessingConfig$TransientSuppression;");
-			voiceDetection = GetFieldID(env, cls, "voiceDetection", "L" PKG_AUDIO "AudioProcessingConfig$VoiceDetection;");
 		}
 
 		JavaEchoCancellerClass::JavaEchoCancellerClass(JNIEnv* env)
@@ -137,9 +132,6 @@ namespace jni
 			cls = FindClass(env, PKG_AUDIO"AudioProcessingConfig$GainControl$AdaptiveDigital");
 
 			enabled = GetFieldID(env, cls, "enabled", "Z");
-			dryRun = GetFieldID(env, cls, "dryRun", "Z");
-			vadResetPeriodMs = GetFieldID(env, cls, "vadResetPeriodMs", "I");
-			adjacentSpeechFramesThreshold = GetFieldID(env, cls, "adjacentSpeechFramesThreshold", "I");
 			maxGainChangeDbPerSecond = GetFieldID(env, cls, "maxGainChangeDbPerSecond", "F");
 			maxOutputNoiseLevelDbfs = GetFieldID(env, cls, "maxOutputNoiseLevelDbfs", "F");
 		}
@@ -159,23 +151,9 @@ namespace jni
 			level = GetFieldID(env, cls, "level", "L" PKG_AUDIO "AudioProcessingConfig$NoiseSuppression$Level;");
 		}
 
-		JavaResidualEchoDetectorClass::JavaResidualEchoDetectorClass(JNIEnv* env)
-		{
-			cls = FindClass(env, PKG_AUDIO"AudioProcessingConfig$ResidualEchoDetector");
-
-			enabled = GetFieldID(env, cls, "enabled", "Z");
-		}
-
 		JavaTransientSuppressionClass::JavaTransientSuppressionClass(JNIEnv* env)
 		{
 			cls = FindClass(env, PKG_AUDIO"AudioProcessingConfig$TransientSuppression");
-
-			enabled = GetFieldID(env, cls, "enabled", "Z");
-		}
-
-		JavaVoiceDetectionClass::JavaVoiceDetectionClass(JNIEnv* env)
-		{
-			cls = FindClass(env, PKG_AUDIO"AudioProcessingConfig$VoiceDetection");
 
 			enabled = GetFieldID(env, cls, "enabled", "Z");
 		}

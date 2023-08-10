@@ -1,3 +1,14 @@
+## [0.8.0]() (2023-08-10)
+
+### API changes
+
+- Set native branch to 5615 (Milestone 112)
+
+### Enhancement
+
+- Актуализация ветки WebRTC поl m112
+- Симбиоз правок от форка https://github.com/kalgecin/webrtc-java и https://github.com/devopvoid/webrtc-java/compare/feature/m103
+
 ## [0.7.0]() (2022-11-14)
 
 ### API changes

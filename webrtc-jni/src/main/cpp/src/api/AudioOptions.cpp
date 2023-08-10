@@ -35,8 +35,15 @@ namespace jni
 			options.auto_gain_control = obj.getBoolean(javaClass->autoGainControl);
 			options.noise_suppression = obj.getBoolean(javaClass->noiseSuppression);
 			options.highpass_filter = obj.getBoolean(javaClass->highpassFilter);
-			options.typing_detection = obj.getBoolean(javaClass->typingDetection);
-			options.residual_echo_detector = obj.getBoolean(javaClass->residualEchoDetector);
+            // Deprecated.
+            // TODO(bugs.webrtc.org/11226): Remove.
+            // Audio processing to detect typing.
+//			options.typing_detection = obj.getBoolean(javaClass->typingDetection); //todo
+
+            // TODO(bugs.webrtc.org/11539): Deprecated, replaced by
+            // webrtc::CreateEchoDetector() and injection when creating the audio
+            // processing module.
+//			options.residual_echo_detector = obj.getBoolean(javaClass->residualEchoDetector); todo
 
 			return options;
 		}
@@ -49,8 +56,6 @@ namespace jni
 			autoGainControl = GetFieldID(env, cls, "autoGainControl", "Z");
 			noiseSuppression = GetFieldID(env, cls, "noiseSuppression", "Z");
 			highpassFilter = GetFieldID(env, cls, "highpassFilter", "Z");
-			typingDetection = GetFieldID(env, cls, "typingDetection", "Z");
-			residualEchoDetector = GetFieldID(env, cls, "residualEchoDetector", "Z");
 		}
 	}
 }
