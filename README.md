@@ -52,11 +52,14 @@ Maven Central artifacts contain native libraries that can be loaded on the follo
 Чтобы создать машинный код, обязательно установите необходимое программное обеспечение (см. ссылки)
 
 **Примечание**: Вам не нужно устанавливать инструменты Depot Tools, сценарий сборки сделает это за вас.
-
+Для Linux (пример Ubuntu) возможно понадобится установить **build-essential** и некоторые доп. либы
+```
+sudo apt install build-essential libpulse-dev libudev-dev xorg-dev
+```
 <table>
   <tr>
     <td>Linux</td>
-    <td><a href="https://webrtc.googlesource.com/src/+/refs/heads/master/docs/native-code/development/prerequisite-sw/index.md#linux-ubuntu_debian">Debian & Ubuntu</a>, <a href="https://chromium.googlesource.com/chromium/src/+/master/docs/linux/build_instructions.md#notes">other distros</a></td>
+    <td><a href="https://webrtc.googlesource.com/src/+/refs/heads/master/docs/native-code/development/prerequisite-sw/index.md#linux-ubuntu_debian">Debian & Ubuntu</a>, <a href="https://chromium.googlesource.com/chromium/src/+/master/docs/linux/build_instructions.md#notes">other distros</a>
   </tr>
   <tr>
     <td>macOS</td>
