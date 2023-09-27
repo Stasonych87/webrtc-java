@@ -122,12 +122,14 @@ target_include_directories(${PROJECT_NAME}
 		${TARGET_INC_DIR}
 		${TARGET_INC_DIR}/third_party/abseil-cpp
 		${TARGET_INC_DIR}/third_party/libyuv/include
+        ${TARGET_INC_DIR}/modules/video_capture
 )
+
 target_link_libraries(${PROJECT_NAME} ${TARGET_LINK_LIB})
 
 if(APPLE)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC NDEBUG WEBRTC_MAC WEBRTC_POSIX)
-	target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreAudio" "-framework AudioToolbox" "-framework IOSurface" "-framework ApplicationServices" "-framework AppKit")
+	target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreAudio" "-framework CoreVideo" "-framework AudioToolbox" "-framework IOSurface" "-framework ApplicationServices" "-framework AppKit")
 elseif(LINUX)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC NDEBUG WEBRTC_LINUX WEBRTC_POSIX)
 	target_link_libraries(${PROJECT_NAME} X11)
@@ -193,6 +195,7 @@ if(WIN32)
 	endif()
 endif()
 
+message(STATUS "GIT_DIR ${GIT_DIR}")
 find_program(PATCH_BIN
 	NAMES patch
 	HINTS ${GIT_DIR}
@@ -210,15 +213,24 @@ if (PATCHES)
 	foreach(PATCH ${PATCHES})
 		message(STATUS "Applying ${PATCH}")
 
-		execute_process(
+        execute_process(
+            COMMAND git apply
+            WORKING_DIRECTORY "${WEBRTC_SRC_DIR}/src"
+            INPUT_FILE "${PATCH}"
+            OUTPUT_VARIABLE OUTPUT
+            RESULT_VARIABLE RESULT)
+        # Petrashov - этот метод почему-то не применял патчи к ветке
+		#[[execute_process(
 			COMMAND ${PATCH_BIN} -p0 --forward
 			WORKING_DIRECTORY "${WEBRTC_SRC_DIR}"
 			INPUT_FILE "${PATCH}"
 			OUTPUT_VARIABLE OUTPUT
-			RESULT_VARIABLE RESULT)
+			RESULT_VARIABLE RESULT).]]
 
 		if (RESULT EQUAL 0)
 			message(STATUS "Patch applied: ${PATCH}")
+		else()
+		    message(STATUS "Warning: Patch ${PATCH} not applied ...")
 		endif()
 	endforeach(PATCH)
 endif()

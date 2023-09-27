@@ -45,6 +45,12 @@ list(APPEND SOURCES
 	${SOURCES_PLATFORM}
 	${SOURCES_RTC}
 )
+if(APPLE)
+    file(GLOB SOURCES_MEDIA_VIDEO_MAC_CAPTURE "src/media/video/${SOURCE_TARGET}/objc/*.mm")
+    list(APPEND SOURCES
+	  ${SOURCES_MEDIA_VIDEO_MAC_CAPTURE}
+    )
+endif()
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
@@ -66,7 +72,7 @@ target_link_libraries(${PROJECT_NAME} jni-voithos)
 target_link_libraries(${PROJECT_NAME} webrtc)
 
 if(APPLE)
-	set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS "-x objective-c++")
+	set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS "-x objective-c++ -fobjc-arc")
 	target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreAudio")
 elseif(LINUX)
 	target_link_libraries(${PROJECT_NAME} -static-libgcc -static-libstdc++ pulse udev)
