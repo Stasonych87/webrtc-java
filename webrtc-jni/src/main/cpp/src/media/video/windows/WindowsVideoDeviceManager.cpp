@@ -87,6 +87,9 @@ namespace jni
 			uint32_t deviceCount = info->NumberOfDevices();
 
 			if (deviceCount > 0) {
+			// set задваивает устройства при реконекте камеры. Как-то криво работает компаратор в Device.cpp
+			// Пока костыль с очисткой всего списка устройств, ибо в это месте они заново перечисляются
+			    captureDevices.clearDevices();
 				const uint32_t size = webrtc::kVideoCaptureDeviceNameLength;
 
 				for (uint32_t i = 0; i < deviceCount; ++i) {
