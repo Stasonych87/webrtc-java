@@ -22,12 +22,6 @@
 
 #include "rtc_base/logging.h"
 
-#ifdef __APPLE__
-#include <AVFoundation/AVFoundation.h>
-#include "media/video/macos/objc/video_capture.h"
-#include "media/video/macos/objc/device_info.h"
-#endif
-
 namespace jni
 {
 	VideoTrackDeviceSource::VideoTrackDeviceSource() :
@@ -56,161 +50,86 @@ namespace jni
 
 	void VideoTrackDeviceSource::start()
 	{
-	    #ifdef __APPLE__
-	        std::unique_ptr<webrtc::videocapturemodule::DeviceInfoIos> info(new webrtc::videocapturemodule::DeviceInfoIos());
+        std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> info(webrtc::VideoCaptureFactory::CreateDeviceInfo());
 
-            uint32_t num = info->NumberOfDevices();
+        if (!info) {
+            throw new Exception("Create video DeviceInfo failed");
+        }
 
-            if (num < 1) {
-                throw new Exception("No video capture devices available");
-            }
+        uint32_t num = info->NumberOfDevices();
 
-            if (device) {
-                std::string devUid;
-                const uint32_t size = webrtc::kVideoCaptureDeviceNameLength;
+        if (num < 1) {
+            throw new Exception("No video capture devices available");
+        }
 
-                for (uint32_t i = 0; i < num; ++i) {
-                    char name[size] = { 0 };
-                    char guid[size] = { 0 };
+        if (device) {
+            std::string devUid;
+            const uint32_t size = webrtc::kVideoCaptureDeviceNameLength;
 
-                    int32_t ret = info->GetDeviceName(i, name, size, guid, size);
+            for (uint32_t i = 0; i < num; ++i) {
+                char name[size] = { 0 };
+                char guid[size] = { 0 };
 
-                    if (ret != 0) {
-                        RTC_LOG(LS_WARNING) << "Get video capture device name failed";
-                        continue;
-                    }
+                int32_t ret = info->GetDeviceName(i, name, size, guid, size);
 
-                    if (device->getName().compare(name) == 0) {
-                        devUid = guid;
-                        break;
-                    }
+                if (ret != 0) {
+                    RTC_LOG(LS_WARNING) << "Get video capture device name failed";
+                    continue;
                 }
 
-                if (devUid.empty()) {
-                    throw new Exception("Device %s not found", device->getName().c_str());
-                }
-
-                captureModule = webrtc::videocapturemodule::VideoCaptureIos::Create(devUid.c_str());
-
-                if (!startCapture()) {
-                    destroy();
-
-                    throw new Exception("Start video capture for UID %s failed", devUid.c_str());
+                if (device->getName().compare(name) == 0) {
+                    devUid = guid;
+                    break;
                 }
             }
+
+            if (devUid.empty()) {
+                throw new Exception("Device %s not found", device->getName().c_str());
+            }
+
+            captureModule = webrtc::VideoCaptureFactory::Create(devUid.c_str());
+
             if (!captureModule) {
-                // No user-defined capture device. Select first available device.
-                const uint32_t size = webrtc::kVideoCaptureDeviceNameLength;
-
-                for (uint32_t i = 0; i < num; ++i) {
-                    char name[size] = { 0 };
-                    char guid[size] = { 0 };
-
-                    int32_t ret = info->GetDeviceName(i, name, size, guid, size);
-
-                    if (ret != 0) {
-                        RTC_LOG(LS_WARNING) << "Get video capture device name failed";
-                        continue;
-                    }
-
-                    captureModule = webrtc::videocapturemodule::VideoCaptureIos::Create(guid);
-
-                    if (!captureModule) {
-                        continue;
-                    }
-
-                    if (startCapture()) {
-                        break;
-                    }
-                    else {
-                        // Clean up resources. Try next device.
-                        destroy();
-                    }
-                }
-            }
-	    #else
-            std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> info(webrtc::VideoCaptureFactory::CreateDeviceInfo());
-
-            if (!info) {
-                throw new Exception("Create video DeviceInfo failed");
+                throw new Exception("Create VideoCaptureModule for UID %s failed", devUid.c_str());
             }
 
-            uint32_t num = info->NumberOfDevices();
+            if (!startCapture()) {
+                destroy();
 
-            if (num < 1) {
-                throw new Exception("No video capture devices available");
+                throw new Exception("Start video capture for UID %s failed", devUid.c_str());
             }
+        }
 
-            if (device) {
-                std::string devUid;
-                const uint32_t size = webrtc::kVideoCaptureDeviceNameLength;
+        if (!captureModule) {
+            // No user-defined capture device. Select first available device.
+            const uint32_t size = webrtc::kVideoCaptureDeviceNameLength;
 
-                for (uint32_t i = 0; i < num; ++i) {
-                    char name[size] = { 0 };
-                    char guid[size] = { 0 };
+            for (uint32_t i = 0; i < num; ++i) {
+                char name[size] = { 0 };
+                char guid[size] = { 0 };
 
-                    int32_t ret = info->GetDeviceName(i, name, size, guid, size);
+                int32_t ret = info->GetDeviceName(i, name, size, guid, size);
 
-                    if (ret != 0) {
-                        RTC_LOG(LS_WARNING) << "Get video capture device name failed";
-                        continue;
-                    }
-
-                    if (device->getName().compare(name) == 0) {
-                        devUid = guid;
-                        break;
-                    }
+                if (ret != 0) {
+                    RTC_LOG(LS_WARNING) << "Get video capture device name failed";
+                    continue;
                 }
 
-                if (devUid.empty()) {
-                    throw new Exception("Device %s not found", device->getName().c_str());
-                }
-
-                captureModule = webrtc::VideoCaptureFactory::Create(devUid.c_str());
+                captureModule = webrtc::VideoCaptureFactory::Create(guid);
 
                 if (!captureModule) {
-                    throw new Exception("Create VideoCaptureModule for UID %s failed", devUid.c_str());
+                    continue;
                 }
 
-                if (!startCapture()) {
+                if (startCapture()) {
+                    break;
+                }
+                else {
+                    // Clean up resources. Try next device.
                     destroy();
-
-                    throw new Exception("Start video capture for UID %s failed", devUid.c_str());
                 }
             }
-
-            if (!captureModule) {
-                // No user-defined capture device. Select first available device.
-                const uint32_t size = webrtc::kVideoCaptureDeviceNameLength;
-
-                for (uint32_t i = 0; i < num; ++i) {
-                    char name[size] = { 0 };
-                    char guid[size] = { 0 };
-
-                    int32_t ret = info->GetDeviceName(i, name, size, guid, size);
-
-                    if (ret != 0) {
-                        RTC_LOG(LS_WARNING) << "Get video capture device name failed";
-                        continue;
-                    }
-
-                    captureModule = webrtc::VideoCaptureFactory::Create(guid);
-
-                    if (!captureModule) {
-                        continue;
-                    }
-
-                    if (startCapture()) {
-                        break;
-                    }
-                    else {
-                        // Clean up resources. Try next device.
-                        destroy();
-                    }
-                }
-            }
-	    #endif
-
+        }
 
 		if (!captureModule || !captureModule->CaptureStarted()) {
 			throw new Exception("Start video capture failed");
