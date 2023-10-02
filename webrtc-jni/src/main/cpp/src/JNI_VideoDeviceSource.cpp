@@ -67,15 +67,11 @@ JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_media_video_VideoDeviceSource_setV
 JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_media_video_VideoDeviceSource_start
 (JNIEnv * env, jobject caller)
 {
-    RTC_LOG(LS_INFO) << "TEST Native: jni VideoDeviceSource start 1 ... ... ...";
 	jni::VideoTrackDeviceSource * videoSource = GetHandle<jni::VideoTrackDeviceSource>(env, caller);
-	RTC_LOG(LS_INFO) << "TEST Native: jni VideoDeviceSource start 2 ... ... ...";
 	CHECK_HANDLE(videoSource);
 
 	try {
-	    RTC_LOG(LS_INFO) << "TEST Native: jni VideoDeviceSource start 3 ... ... ...";
 		videoSource->start();
-		RTC_LOG(LS_INFO) << "TEST Native: jni VideoDeviceSource start 4 ... ... ...";
 	}
 	catch (...) {
 		ThrowCxxJavaException(env);
