@@ -54,7 +54,7 @@ Maven Central artifacts contain native libraries that can be loaded on the follo
 **Примечание**: Вам не нужно устанавливать инструменты Depot Tools, сценарий сборки сделает это за вас.
 Для Linux (пример Ubuntu) возможно понадобится установить **build-essential** и некоторые доп. либы
 ```
-sudo apt install build-essential libpulse-dev libudev-dev xorg-dev
+sudo apt install -y build-essential libpulse-dev libudev-dev xorg-dev pulseaudio libasound2-dev libv4l-dev
 ```
 <table>
   <tr>
@@ -87,7 +87,7 @@ mvn install
 | webrtc.src.dir     | Абсолютный путь к каталогу в который будет выгружено дерево исходников WebRTC.                                                                                             | /\<user_home\>/webrtc       |
 | webrtc.install.dir | Путь установки для скомпилированной библиотеки WebRTC. Также используется для привязки к предварительно скомпилированной библиотеке WebRTC для сокращения времени сборки.  | /\<user_home\>/webrtc/build |
 
-по идее можно так использовать при запуске mvn
+Можно так использовать при запуске mvn
 ```
 mvn install "-Dwebrtc.src.dir=D:/testDir/webrtc" "-Dwebrtc.install.dir=D:/testDir/webrtc/build"
 ```
