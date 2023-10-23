@@ -28,6 +28,25 @@ namespace jni
 {
 	namespace avdev
 	{
+	    /**
+	    DeviceTransport и DeviceFormFactor включают пока только для работы с аудио.
+	    Видео устройства не учитываются в перечислениях. М.б. когда-то добавятся сюда и для видео устройств значения
+	    */
+	    enum class DeviceTransport {
+            trUnknown,
+            trHdmi,
+            trUsb,
+            trWireless,
+        };
+
+        enum class DeviceFormFactor {
+            ffUnknown,
+            ffSpeaker,
+            ffMicrophone,
+            ffHeadset,
+            ffHeadphone
+        };
+
 		class Device
 		{
 			public:
@@ -39,6 +58,10 @@ namespace jni
 
 				std::string getName() const;
 				std::string getDescriptor() const;
+				DeviceTransport getDeviceTransport();
+                DeviceFormFactor getDeviceFormFactor();
+                void setDeviceTransport(DeviceTransport deviceTransport);
+                void setDeviceFormFactor(DeviceFormFactor deviceFormFactor);
 
 			protected:
 				Device(std::string name, std::string descriptor);
@@ -46,6 +69,8 @@ namespace jni
 			private:
 				const std::string name;
 				const std::string descriptor;
+				DeviceTransport deviceTransport;
+                DeviceFormFactor deviceFormFactor;
 		};
 
 
@@ -63,6 +88,8 @@ namespace jni
 				jmethodID ctor;
 				jfieldID name;
 				jfieldID descriptor;
+				jfieldID deviceTransport;
+                jfieldID deviceFormFactor;
 		};
 
 		JavaLocalRef<jobject> toJavaDevice(JNIEnv * env, avdev::DevicePtr device);

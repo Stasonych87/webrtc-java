@@ -24,6 +24,9 @@ public abstract class Device {
 
 	private final String name;
 
+	private DeviceTransport deviceTransport = DeviceTransport.UNKNOWN;
+
+	private DeviceFormFactor deviceFormFactor = DeviceFormFactor.UNKNOWN;
 
 	protected Device(String name, String descriptor) {
 		this.name = name;
@@ -36,6 +39,22 @@ public abstract class Device {
 
 	public String getName() {
 		return name;
+	}
+
+	public DeviceTransport getDeviceTransport() {
+		return deviceTransport;
+	}
+
+	public DeviceFormFactor getDeviceFormFactor() {
+		return deviceFormFactor;
+	}
+
+	public void setDeviceFormFactor(DeviceFormFactor deviceFormFactor) {
+		this.deviceFormFactor = deviceFormFactor;
+	}
+
+	public void setDeviceTransport(DeviceTransport deviceTransport) {
+		this.deviceTransport = deviceTransport;
 	}
 
 	@Override
