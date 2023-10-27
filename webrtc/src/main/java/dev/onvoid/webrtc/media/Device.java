@@ -79,7 +79,7 @@ public abstract class Device {
 
 	@Override
 	public String toString() {
-		return String.format("%s [name=%s, descriptor=%s]",
-				Device.class.getSimpleName(), name, descriptor);
+		return String.format("%s [name=%s, descriptor=%s, transport=%s, formFactor=%s]",
+				Device.class.getSimpleName(), name, descriptor, deviceTransport.toString(), deviceFormFactor.toString());
 	}
 }

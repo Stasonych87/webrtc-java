@@ -5,5 +5,21 @@ public enum DeviceFormFactor {
     SPEAKER,
     MICROPHONE,
     HEADSET,
-    HEADPHONE
+    HEADPHONE;
+
+    @Override
+    public String toString() {
+        switch (this) {
+            case SPEAKER:
+                return "SPEAKER";
+            case MICROPHONE:
+                return "MICROPHONE";
+            case HEADSET:
+                return "HEADSET";
+            case HEADPHONE:
+                return "HEADPHONE";
+            default:
+                return "UNKNOWN";
+        }
+    }
 }
