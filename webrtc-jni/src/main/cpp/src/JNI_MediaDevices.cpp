@@ -65,9 +65,8 @@ JNIEXPORT jobject JNICALL Java_dev_onvoid_webrtc_media_MediaDevices_getDefaultAu
 {
 	jni::WebRTCContext * context = static_cast<jni::WebRTCContext *>(javaContext);
 
-	auto device = context->getAudioDeviceManager()->getDefaultAudioPlaybackDevice();
-
 	try {
+	    auto device = context->getAudioDeviceManager()->getDefaultAudioPlaybackDevice();
 	    device -> audioDeviceDirectionType = jni::avdev::AudioDeviceDirectionType::adtRender;
 		return jni::AudioDevice::toJavaAudioDevice(env, device).release();
 	}
@@ -83,9 +82,8 @@ JNIEXPORT jobject JNICALL Java_dev_onvoid_webrtc_media_MediaDevices_getDefaultAu
 {
 	jni::WebRTCContext * context = static_cast<jni::WebRTCContext *>(javaContext);
 
-	auto device = context->getAudioDeviceManager()->getDefaultAudioCaptureDevice();
-
 	try {
+	    auto device = context->getAudioDeviceManager()->getDefaultAudioCaptureDevice();
 	    device -> audioDeviceDirectionType = jni::avdev::AudioDeviceDirectionType::adtCapture;
 		return jni::AudioDevice::toJavaAudioDevice(env, device).release();
 	}
