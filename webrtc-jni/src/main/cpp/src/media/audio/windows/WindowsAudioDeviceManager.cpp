@@ -109,6 +109,11 @@ namespace jni
 
 			if (enumCaptureDevices) {
 				int16_t deviceCount = audioModule->RecordingDevices();
+                // Петрашов 24.11.23 set задваивает устройства при реконекте видео. Как-то криво работает компаратор в Device.cpp
+                // У себя на аудио такое на ловил, но тестеры поймали с микрофонами такое. Зачищаю set и заполняю заново
+                if (deviceCount > 0) {
+                    captureDevices.clearDevices();
+                }
 
 				for (int i = 0; i < deviceCount; ++i) {
 					if (audioModule->RecordingDeviceName(i, name, guid) == 0) {
@@ -122,6 +127,11 @@ namespace jni
 			}
 			if (enumRenderDevices) {
 				int16_t deviceCount = audioModule->PlayoutDevices();
+				// Петрашов 24.11.23 set задваивает устройства при реконекте видео. Как-то криво работает компаратор в Device.cpp
+                // У себя на аудио такое на ловил, но тестеры поймали с микрофонами такое. Зачищаю set и заполняю заново
+				if (deviceCount > 0) {
+				    playbackDevices.clearDevices();
+				}
 
 				for (int i = 0; i < deviceCount; ++i) {
 					if (audioModule->PlayoutDeviceName(i, name, guid) == 0) {
