@@ -135,7 +135,7 @@ elseif(LINUX)
 	target_link_libraries(${PROJECT_NAME} X11)
 elseif(WIN32)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC NDEBUG WEBRTC_WIN NOMINMAX WIN32_LEAN_AND_MEAN)
-	target_link_libraries(${PROJECT_NAME} D3D11 DXGI dwmapi user32 gdi32 iphlpapi dmoguids msdmo secur32 strmiids winmm wmcodecdspuuid ws2_32 shcore)
+	target_link_libraries(${PROJECT_NAME} D3D11 DXGI dwmapi user32 gdi32 iphlpapi dmoguids msdmo secur32 strmiids winmm wmcodecdspuuid ws2_32)
 endif()
 
 if(EXISTS "${WEBRTC_LIB_PATH}" OR EXISTS "${WEBRTC_LIB_PATH_INSTALLED}")
@@ -236,8 +236,7 @@ if (PATCHES)
 endif()
 
 message(STATUS "WebRTC: generate")
-# Petrashov добавил флаг rtc_enable_win_wgc=false чтобы не ругался linker и gn выключил исходники в сборке использующие win_wgc
-set(COMPILE_ARGS "is_debug=false rtc_enable_win_wgc=false use_lld=false is_component_build=false enable_iterator_debugging=false target_cpu=\"${TARGET_CPU}\" treat_warnings_as_errors=false rtc_build_examples=false rtc_include_tests=false use_rtti=true use_custom_libcxx=false symbol_level=0 rtc_use_h264=true")
+set(COMPILE_ARGS "is_debug=false target_cpu=\"${TARGET_CPU}\" treat_warnings_as_errors=false rtc_build_examples=false rtc_include_tests=false use_rtti=true use_custom_libcxx=false symbol_level=0 rtc_use_h264=true")
 execute_command(
 	COMMAND gn gen ${WEBRTC_BUILD} --args=${COMPILE_ARGS}
 	WORKING_DIRECTORY "${WEBRTC_SRC}"

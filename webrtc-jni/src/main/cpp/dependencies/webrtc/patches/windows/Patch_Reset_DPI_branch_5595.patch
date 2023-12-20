@@ -1,0 +1,343 @@
+Subject: [PATCH] Patch Reset DPI branch 5595
+---
+Index: modules/desktop_capture/win/screen_capture_utils.cc
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/desktop_capture/win/screen_capture_utils.cc b/modules/desktop_capture/win/screen_capture_utils.cc
+--- a/modules/desktop_capture/win/screen_capture_utils.cc	(revision d75b9e9ff07ee42841b4e416629c9fbd4b058905)
++++ b/modules/desktop_capture/win/screen_capture_utils.cc	(date 1703051593538)
+@@ -10,7 +10,6 @@
+ 
+ #include "modules/desktop_capture/win/screen_capture_utils.h"
+ 
+-#include <shellscalingapi.h>
+ #include <windows.h>
+ 
+ #include <string>
+@@ -146,28 +145,6 @@
+                                GetSystemMetrics(SM_CYVIRTUALSCREEN));
+ }
+ 
+-DesktopVector GetDpiForMonitor(HMONITOR monitor) {
+-  UINT dpi_x, dpi_y;
+-  // MDT_EFFECTIVE_DPI includes the scale factor as well as the system DPI.
+-  HRESULT hr = ::GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi_x, &dpi_y);
+-  if (SUCCEEDED(hr)) {
+-    return {static_cast<INT>(dpi_x), static_cast<INT>(dpi_y)};
+-  }
+-  RTC_LOG_GLE_EX(LS_WARNING, hr) << "GetDpiForMonitor() failed";
+-
+-  // If we can't get the per-monitor DPI, then return the system DPI.
+-  HDC hdc = GetDC(nullptr);
+-  if (hdc) {
+-    DesktopVector dpi{GetDeviceCaps(hdc, LOGPIXELSX),
+-                      GetDeviceCaps(hdc, LOGPIXELSY)};
+-    ReleaseDC(nullptr, hdc);
+-    return dpi;
+-  }
+-
+-  // If everything fails, then return the default DPI for Windows.
+-  return {96, 96};
+-}
+-
+ DesktopRect GetScreenRect(const DesktopCapturer::SourceId screen,
+                           const std::wstring& device_key) {
+   if (screen == kFullDesktopScreenId) {
+Index: modules/desktop_capture/win/screen_capturer_win_gdi.cc
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/desktop_capture/win/screen_capturer_win_gdi.cc b/modules/desktop_capture/win/screen_capturer_win_gdi.cc
+--- a/modules/desktop_capture/win/screen_capturer_win_gdi.cc	(revision d75b9e9ff07ee42841b4e416629c9fbd4b058905)
++++ b/modules/desktop_capture/win/screen_capturer_win_gdi.cc	(date 1703051593545)
+@@ -160,7 +160,7 @@
+   }
+ 
+   // If the display configurations have changed then recreate GDI resources.
+-  if (display_configuration_monitor_.IsChanged(kFullDesktopScreenId)) {
++  if (display_configuration_monitor_.IsChanged()) {
+     if (desktop_dc_) {
+       ReleaseDC(NULL, desktop_dc_);
+       desktop_dc_ = nullptr;
+Index: modules/desktop_capture/win/dxgi_duplicator_controller.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/desktop_capture/win/dxgi_duplicator_controller.h b/modules/desktop_capture/win/dxgi_duplicator_controller.h
+--- a/modules/desktop_capture/win/dxgi_duplicator_controller.h	(revision d75b9e9ff07ee42841b4e416629c9fbd4b058905)
++++ b/modules/desktop_capture/win/dxgi_duplicator_controller.h	(date 1703051593568)
+@@ -41,7 +41,7 @@
+ // but a later Duplicate() returns false, this usually means the display mode is
+ // changing. Consumers should retry after a while. (Typically 50 milliseconds,
+ // but according to hardware performance, this time may vary.)
+-// The underlying DxgiOutputDuplicators may take an additional reference on the
++// The underyling DxgiOutputDuplicators may take an additional reference on the
+ // frame passed in to the Duplicate methods so that they can guarantee delivery
+ // of new frames when requested; since if there have been no updates to the
+ // surface, they may be unable to capture a frame.
+@@ -49,7 +49,7 @@
+  public:
+   using Context = DxgiFrameContext;
+ 
+-  // A collection of D3d information we are interested in, which may impact
++  // A collection of D3d information we are interested on, which may impact
+   // capturer performance or reliability.
+   struct D3dInfo {
+     // Each video adapter has its own D3D_FEATURE_LEVEL, so this structure
+@@ -105,7 +105,7 @@
+   // synchronize them manually. We should find a way to do it.
+   Result Duplicate(DxgiFrame* frame);
+ 
+-  // Captures one monitor and writes into target. `monitor_id` must be >= 0. If
++  // Captures one monitor and writes into target. `monitor_id` should >= 0. If
+   // `monitor_id` is greater than the total screen count of all the Duplicators,
+   // this function returns false. May retain a reference to `frame`'s underlying
+   // |SharedDesktopFrame|.
+@@ -113,7 +113,7 @@
+ 
+   // Returns dpi of current system. Returns an empty DesktopVector if system
+   // does not support DXGI based capturer.
+-  DesktopVector system_dpi();
++  DesktopVector dpi();
+ 
+   // Returns the count of screens on the system. These screens can be retrieved
+   // by an integer in the range of [0, ScreenCount()). If system does not
+@@ -172,7 +172,7 @@
+   // Initialize().
+   bool DoInitialize() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+ 
+-  // Clears all COM components referred to by this instance. So next Duplicate()
++  // Clears all COM components referred by this instance. So next Duplicate()
+   // call will eventually initialize this instance again.
+   void Deinitialize() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+ 
+@@ -243,12 +243,12 @@
+   // a Context instance is always initialized after DxgiDuplicatorController.
+   int identity_ RTC_GUARDED_BY(mutex_) = 0;
+   DesktopRect desktop_rect_ RTC_GUARDED_BY(mutex_);
+-  DesktopVector system_dpi_ RTC_GUARDED_BY(mutex_);
++  DesktopVector dpi_ RTC_GUARDED_BY(mutex_);
+   std::vector<DxgiAdapterDuplicator> duplicators_ RTC_GUARDED_BY(mutex_);
+   D3dInfo d3d_info_ RTC_GUARDED_BY(mutex_);
+   DisplayConfigurationMonitor display_configuration_monitor_
+       RTC_GUARDED_BY(mutex_);
+-  // A number to indicate how many successful duplications have been performed.
++  // A number to indicate how many succeeded duplications have been performed.
+   uint32_t succeeded_duplications_ RTC_GUARDED_BY(mutex_) = 0;
+ };
+ 
+Index: modules/desktop_capture/BUILD.gn
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/desktop_capture/BUILD.gn b/modules/desktop_capture/BUILD.gn
+--- a/modules/desktop_capture/BUILD.gn	(revision d75b9e9ff07ee42841b4e416629c9fbd4b058905)
++++ b/modules/desktop_capture/BUILD.gn	(date 1703051593517)
+@@ -516,11 +516,9 @@
+     libs = [
+       "d3d11.lib",
+       "dxgi.lib",
+-      "shcore.lib",
+     ]
+     deps += [
+       "../../rtc_base:win32",
+-      "../../rtc_base/containers:flat_map",
+       "../../rtc_base/win:create_direct3d_device",
+       "../../rtc_base/win:get_activation_factory",
+       "../../rtc_base/win:windows_version",
+Index: modules/desktop_capture/win/dxgi_duplicator_controller.cc
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/desktop_capture/win/dxgi_duplicator_controller.cc b/modules/desktop_capture/win/dxgi_duplicator_controller.cc
+--- a/modules/desktop_capture/win/dxgi_duplicator_controller.cc	(revision d75b9e9ff07ee42841b4e416629c9fbd4b058905)
++++ b/modules/desktop_capture/win/dxgi_duplicator_controller.cc	(date 1703051593561)
+@@ -129,10 +129,10 @@
+   return DoDuplicate(frame, monitor_id);
+ }
+ 
+-DesktopVector DxgiDuplicatorController::system_dpi() {
++DesktopVector DxgiDuplicatorController::dpi() {
+   MutexLock lock(&mutex_);
+   if (Initialize()) {
+-    return system_dpi_;
++    return dpi_;
+   }
+   return DesktopVector();
+ }
+@@ -174,7 +174,7 @@
+   // TODO(zijiehe): Confirm whether IDXGIOutput::GetDesc() and
+   // IDXGIOutputDuplication::GetDesc() can detect the resolution change without
+   // reinitialization.
+-  if (display_configuration_monitor_.IsChanged(frame->source_id_)) {
++  if (display_configuration_monitor_.IsChanged()) {
+     Deinitialize();
+   }
+ 
+@@ -286,8 +286,7 @@
+   HDC hdc = GetDC(nullptr);
+   // Use old DPI value if failed.
+   if (hdc) {
+-    system_dpi_.set(GetDeviceCaps(hdc, LOGPIXELSX),
+-                    GetDeviceCaps(hdc, LOGPIXELSY));
++    dpi_.set(GetDeviceCaps(hdc, LOGPIXELSX), GetDeviceCaps(hdc, LOGPIXELSY));
+     ReleaseDC(nullptr, hdc);
+   }
+ 
+@@ -344,7 +343,7 @@
+   }
+ 
+   if (result) {
+-    target->set_dpi(system_dpi_);
++    target->set_dpi(dpi_);
+     return true;
+   }
+ 
+Index: modules/desktop_capture/win/display_configuration_monitor.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/desktop_capture/win/display_configuration_monitor.h b/modules/desktop_capture/win/display_configuration_monitor.h
+--- a/modules/desktop_capture/win/display_configuration_monitor.h	(revision d75b9e9ff07ee42841b4e416629c9fbd4b058905)
++++ b/modules/desktop_capture/win/display_configuration_monitor.h	(date 1703051593552)
+@@ -11,9 +11,7 @@
+ #ifndef MODULES_DESKTOP_CAPTURE_WIN_DISPLAY_CONFIGURATION_MONITOR_H_
+ #define MODULES_DESKTOP_CAPTURE_WIN_DISPLAY_CONFIGURATION_MONITOR_H_
+ 
+-#include "modules/desktop_capture/desktop_capturer.h"
+ #include "modules/desktop_capture/desktop_geometry.h"
+-#include "rtc_base/containers/flat_map.h"
+ 
+ namespace webrtc {
+ 
+@@ -22,29 +20,16 @@
+ // TODO(zijiehe): Also check for pixel format changes.
+ class DisplayConfigurationMonitor {
+  public:
+-  // Checks whether the display configuration has changed since the last time
+-  // IsChanged() was called. |source_id| is used to observe changes for a
+-  // specific display or all displays if kFullDesktopScreenId is passed in.
+-  // Returns false if object was Reset() or if IsChanged() has not been called.
+-  bool IsChanged(DesktopCapturer::SourceId source_id);
++  // Checks whether the change of display configuration has happened after last
++  // IsChanged() call. This function won't return true for the first time after
++  // constructor or Reset() call.
++  bool IsChanged();
+ 
+   // Resets to the initial state.
+   void Reset();
+ 
+  private:
+-  DesktopVector GetDpiForSourceId(DesktopCapturer::SourceId source_id);
+-
+-  // Represents the size of the desktop which includes all displays.
+   DesktopRect rect_;
+-
+-  // Tracks the DPI for each display being captured. We need to track for each
+-  // display as each one can be configured to use a different DPI which will not
+-  // be reflected in calls to get the system DPI.
+-  flat_map<DesktopCapturer::SourceId, DesktopVector> source_dpis_;
+-
+-  // Indicates whether |rect_| and |source_dpis_| have been initialized. This is
+-  // used to prevent the monitor instance from signaling 'IsChanged()' before
+-  // the initial values have been set.
+   bool initialized_ = false;
+ };
+ 
+Index: modules/desktop_capture/win/screen_capture_utils.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/desktop_capture/win/screen_capture_utils.h b/modules/desktop_capture/win/screen_capture_utils.h
+--- a/modules/desktop_capture/win/screen_capture_utils.h	(revision d75b9e9ff07ee42841b4e416629c9fbd4b058905)
++++ b/modules/desktop_capture/win/screen_capture_utils.h	(date 1703051593524)
+@@ -54,10 +54,6 @@
+ // primary display's top-left. On failure, returns an empty rect.
+ DesktopRect GetMonitorRect(HMONITOR monitor);
+ 
+-// Returns the DPI for the specified monitor. On failure, returns the system DPI
+-// or the Windows default DPI (96x96) if the system DPI can't be retrieved.
+-DesktopVector GetDpiForMonitor(HMONITOR monitor);
+-
+ // Returns true if `screen` is a valid screen. The screen device key is
+ // returned through `device_key` if the screen is valid. The device key can be
+ // used in GetScreenRect to verify the screen matches the previously obtained
+Index: modules/desktop_capture/win/display_configuration_monitor.cc
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/desktop_capture/win/display_configuration_monitor.cc b/modules/desktop_capture/win/display_configuration_monitor.cc
+--- a/modules/desktop_capture/win/display_configuration_monitor.cc	(revision d75b9e9ff07ee42841b4e416629c9fbd4b058905)
++++ b/modules/desktop_capture/win/display_configuration_monitor.cc	(date 1703051593505)
+@@ -10,57 +10,28 @@
+ 
+ #include "modules/desktop_capture/win/display_configuration_monitor.h"
+ 
+-#include <windows.h>
+-
+ #include "modules/desktop_capture/win/screen_capture_utils.h"
+-#include "rtc_base/logging.h"
+ 
+ namespace webrtc {
+ 
+-bool DisplayConfigurationMonitor::IsChanged(
+-    DesktopCapturer::SourceId source_id) {
++bool DisplayConfigurationMonitor::IsChanged() {
+   DesktopRect rect = GetFullscreenRect();
+-  DesktopVector dpi = GetDpiForSourceId(source_id);
+-
+   if (!initialized_) {
+     initialized_ = true;
+     rect_ = rect;
+-    source_dpis_.emplace(source_id, std::move(dpi));
+     return false;
+   }
+ 
+-  if (!source_dpis_.contains(source_id)) {
+-    // If this is the first time we've seen this source_id, use the current DPI
+-    // so the monitor does not indicate a change and possibly get reset.
+-    source_dpis_.emplace(source_id, dpi);
++  if (rect.equals(rect_)) {
++    return false;
+   }
+ 
+-  bool has_changed = false;
+-  if (!rect.equals(rect_) || !source_dpis_.at(source_id).equals(dpi)) {
+-    has_changed = true;
+-    rect_ = rect;
+-    source_dpis_.emplace(source_id, std::move(dpi));
+-  }
+-
+-  return has_changed;
++  rect_ = rect;
++  return true;
+ }
+ 
+ void DisplayConfigurationMonitor::Reset() {
+   initialized_ = false;
+-  source_dpis_.clear();
+-  rect_ = {};
+-}
+-
+-DesktopVector DisplayConfigurationMonitor::GetDpiForSourceId(
+-    DesktopCapturer::SourceId source_id) {
+-  HMONITOR monitor = 0;
+-  if (source_id == kFullDesktopScreenId) {
+-    // Get a handle to the primary monitor when capturing the full desktop.
+-    monitor = MonitorFromPoint({0, 0}, MONITOR_DEFAULTTOPRIMARY);
+-  } else if (!GetHmonitorFromDeviceIndex(source_id, &monitor)) {
+-    RTC_LOG(LS_WARNING) << "GetHmonitorFromDeviceIndex failed.";
+-  }
+-  return GetDpiForMonitor(monitor);
+ }
+ 
+ }  // namespace webrtc
