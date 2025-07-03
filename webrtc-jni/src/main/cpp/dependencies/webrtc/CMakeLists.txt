@@ -1,12 +1,23 @@
 cmake_minimum_required(VERSION 3.13)
 project(webrtc)
 
+if(LINUX)
+	# Used for Linux sysroot installation
+	find_package(Python3 REQUIRED COMPONENTS Interpreter)
+endif()
+
 FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/pseudo.hxx
 "template<class T> class pseudo{}\n")
 FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/pseudo.cxx
 "static void pseudo(void){}\n")
 
 add_library(${PROJECT_NAME} STATIC pseudo.cxx pseudo.hxx)
+
+set(CUSTOM_LIBCXX false)
+
+if((LINUX AND NOT TARGET_CPU MATCHES "^arm") OR WIN32)
+    set(CUSTOM_LIBCXX true)
+endif()
 
 if(NOT DEFINED TARGET_CPU)
 	if(CMAKE_SIZEOF_VOID_P EQUAL 4)
@@ -15,7 +26,7 @@ if(NOT DEFINED TARGET_CPU)
 		set(TARGET_CPU "x64")
 	endif()
 
-	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm.*$")
 		set(TARGET_CPU "${CMAKE_SYSTEM_PROCESSOR}")
 	endif()
 endif()
@@ -74,10 +85,48 @@ function(execute_command)
 	print("${COMMAND_ERROR}")
 endfunction()
 
+function(sysroot_install)
+	message(STATUS "Installing sysroot")
+
+    if(EXISTS "${WEBRTC_INSTALL_DIR}/lib/${WEBRTC_LIB}")
+        set(SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/linux/sysroot")
+    else()
+        set(SCRIPT_PATH "${WEBRTC_SRC_DIR}/src/build/linux/sysroot_scripts")
+    endif()
+
+	execute_process(
+		COMMAND ${Python3_EXECUTABLE} install-sysroot.py --arch=${TARGET_CPU}
+		WORKING_DIRECTORY "${SCRIPT_PATH}"
+		OUTPUT_VARIABLE COMMAND_OUTPUT
+		ERROR_VARIABLE COMMAND_ERROR
+	)
+
+    print("Sysroot script path: ${SCRIPT_PATH}")
+	print("${COMMAND_OUTPUT}")
+    print("${COMMAND_ERROR}")
+endfunction()
+
 function(sysroot_link)
 	message(STATUS "Retrieving libm.so from sysroot")
+
+    set(SYSROOT_ARCH "amd64")
+
+    if(${TARGET_CPU} STREQUAL "x64")
+        set(SYSROOT_ARCH "amd64")
+    elseif(${TARGET_CPU} STREQUAL "arm")
+        set(SYSROOT_ARCH "armhf")
+    elseif(${TARGET_CPU} STREQUAL "arm64")
+        set(SYSROOT_ARCH "arm64")
+    endif()
+
+    if(EXISTS "${WEBRTC_INSTALL_DIR}/lib/${WEBRTC_LIB}")
+        set(SYSROOT_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+    else()
+        set(SYSROOT_PATH "${WEBRTC_SRC_DIR}/src/build")
+    endif()
+
 	execute_process(
-		COMMAND find src/build/linux/debian_bullseye_amd64-sysroot -iname libm-*.so
+		COMMAND find "${SYSROOT_PATH}/linux/debian_bullseye_${SYSROOT_ARCH}-sysroot" -iname libm-*.so
 		WORKING_DIRECTORY "${WEBRTC_SRC_DIR}"
 		OUTPUT_VARIABLE COMMAND_OUTPUT
 		ERROR_VARIABLE COMMAND_ERROR
@@ -85,9 +134,9 @@ function(sysroot_link)
 
 	string(STRIP ${COMMAND_OUTPUT} LIBM_PATH)
 
-	message(STATUS "Linking libm.so from: ${WEBRTC_SRC_DIR}/${LIBM_PATH}")
+	message(STATUS "Linking libm.so from: ${LIBM_PATH}")
 
-	target_link_libraries(${PROJECT_NAME} "${WEBRTC_SRC_DIR}/${LIBM_PATH}")
+	target_link_libraries(${PROJECT_NAME} "${LIBM_PATH}")
 endfunction()
 
 file(TO_CMAKE_PATH "${WEBRTC_SRC_DIR}" WEBRTC_SRC_DIR)
@@ -105,16 +154,33 @@ file(TO_CMAKE_PATH "${WEBRTC_LIB_PATH_INSTALLED}" WEBRTC_LIB_PATH_INSTALLED)
 
 message(STATUS "WebRTC checkout path: ${WEBRTC_DIR}")
 message(STATUS "WebRTC checkout branch: ${WEBRTC_BRANCH}")
-message(STATUS "WebRTC target CPU: ${TARGET_CPU}")
+message(STATUS "WebRTC target: ${SOURCE_TARGET} ${TARGET_CPU}")
 message(STATUS "WebRTC build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "WebRTC use custom libcxx: ${CUSTOM_LIBCXX}")
 message(STATUS "WebRTC install path: ${WEBRTC_INSTALL_DIR}")
+
 
 if(EXISTS "${WEBRTC_LIB_PATH_INSTALLED}")
 	set(TARGET_INC_DIR ${WEBRTC_INSTALL_DIR}/include)
 	set(TARGET_LINK_LIB ${WEBRTC_LIB_PATH_INSTALLED})
+	set(TARGET_LIB_DIR ${WEBRTC_INSTALL_DIR}/lib)
+	set(TARGET_LIBCPP_BUILDTOOLS_INC_DIR ${TARGET_INC_DIR}/third_party/libc++/)
+	set(TARGET_LIBCPP_INC_DIR ${TARGET_INC_DIR}/third_party/libc++/include)
+	set(TARGET_LIBCPP_ABI_INC_DIR ${TARGET_INC_DIR}/third_party/libc++abi/include)
 else()
 	set(TARGET_INC_DIR ${WEBRTC_SRC})
 	set(TARGET_LINK_LIB ${WEBRTC_LIB_PATH})
+	set(TARGET_LIB_DIR ${WEBRTC_SRC}/${WEBRTC_BUILD}/obj)
+	set(TARGET_LIBCPP_BUILDTOOLS_INC_DIR ${WEBRTC_SRC}/buildtools/third_party/libc++/)
+	set(TARGET_LIBCPP_INC_DIR ${WEBRTC_SRC}/third_party/libc++/src/include)
+	set(TARGET_LIBCPP_ABI_INC_DIR ${WEBRTC_SRC}/third_party/libc++abi/src/include)
+endif()
+
+if((LINUX AND NOT TARGET_CPU MATCHES "^arm") OR WIN32)
+	target_include_directories(${PROJECT_NAME} PUBLIC ${TARGET_LIBCPP_BUILDTOOLS_INC_DIR})
+	target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${TARGET_LIBCPP_INC_DIR} ${TARGET_LIBCPP_ABI_INC_DIR})
+
+	target_link_directories(${PROJECT_NAME} PUBLIC "${TARGET_LIB_DIR}")
 endif()
 
 target_include_directories(${PROJECT_NAME}
@@ -122,26 +188,30 @@ target_include_directories(${PROJECT_NAME}
 		${TARGET_INC_DIR}
 		${TARGET_INC_DIR}/third_party/abseil-cpp
 		${TARGET_INC_DIR}/third_party/libyuv/include
-        ${TARGET_INC_DIR}/modules/video_capture
 )
-
 target_link_libraries(${PROJECT_NAME} ${TARGET_LINK_LIB})
 
 if(APPLE)
-	target_compile_definitions(${PROJECT_NAME} PUBLIC NDEBUG WEBRTC_MAC WEBRTC_POSIX)
-	target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreAudio" "-framework CoreVideo" "-framework AudioToolbox" "-framework IOSurface" "-framework ApplicationServices" "-framework AppKit")
+	target_compile_definitions(${PROJECT_NAME} PUBLIC WEBRTC_MAC WEBRTC_POSIX)
+	target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreAudio" "-framework CoreVideo" "-framework ScreenCaptureKit" "-framework AudioToolbox" "-framework IOSurface" "-framework ApplicationServices" "-framework AppKit")
 elseif(LINUX)
-	target_compile_definitions(${PROJECT_NAME} PUBLIC NDEBUG WEBRTC_LINUX WEBRTC_POSIX)
-	target_link_libraries(${PROJECT_NAME} X11)
+	# Find DBus
+	find_package(PkgConfig QUIET REQUIRED) # Include functions provided by PkgConfig module.
+	pkg_check_modules(DBUS REQUIRED dbus-1)
+
+	target_include_directories(${PROJECT_NAME} PUBLIC ${DBUS_INCLUDE_DIRS})
+	target_compile_definitions(${PROJECT_NAME} PUBLIC WEBRTC_LINUX WEBRTC_POSIX)
+	target_link_libraries(${PROJECT_NAME} X11 Xfixes Xrandr Xcomposite dbus-1)
 elseif(WIN32)
-	target_compile_definitions(${PROJECT_NAME} PUBLIC NDEBUG WEBRTC_WIN NOMINMAX WIN32_LEAN_AND_MEAN)
-	target_link_libraries(${PROJECT_NAME} D3D11 DXGI dwmapi user32 gdi32 iphlpapi dmoguids msdmo secur32 strmiids winmm wmcodecdspuuid ws2_32)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC WEBRTC_WIN NOMINMAX WIN32_LEAN_AND_MEAN NDEBUG)
+	target_link_libraries(${PROJECT_NAME} D3D11 DXGI user32 gdi32 iphlpapi dmoguids msdmo secur32 strmiids winmm wmcodecdspuuid ws2_32)
 endif()
 
 if(EXISTS "${WEBRTC_LIB_PATH}" OR EXISTS "${WEBRTC_LIB_PATH_INSTALLED}")
 	message(STATUS "WebRTC: Compiled version found '${TARGET_LINK_LIB}'")
 
 	if(LINUX)
+		sysroot_install()
 		sysroot_link()
 	endif()
 
@@ -182,6 +252,10 @@ execute_command(
 	COMMAND gclient sync
 	WORKING_DIRECTORY "${WEBRTC_DIR}"
 )
+
+if(LINUX)
+	sysroot_install()
+endif()
 
 file(GLOB PATCHES "${CMAKE_CURRENT_LIST_DIR}/patches/${SOURCE_TARGET}/*.patch")
 message(STATUS "WebRTC PATCHES ${CMAKE_CURRENT_LIST_DIR}/patches/${SOURCE_TARGET}/*.patch")
@@ -236,7 +310,30 @@ if (PATCHES)
 endif()
 
 message(STATUS "WebRTC: generate")
-set(COMPILE_ARGS "is_debug=false target_cpu=\"${TARGET_CPU}\" treat_warnings_as_errors=false rtc_build_examples=false rtc_include_tests=false use_rtti=true use_custom_libcxx=false symbol_level=0 rtc_use_h264=true")
+set(COMPILE_ARGS "target_cpu=\"${TARGET_CPU}\" \
+use_custom_libcxx=${CUSTOM_LIBCXX} \
+is_clang=true \
+is_debug=false \
+is_component_build=false \
+treat_warnings_as_errors=false \
+rtc_build_tools=false \
+rtc_use_perfetto=false \
+rtc_use_pipewire=false \
+rtc_enable_protobuf=false \
+rtc_build_examples=false \
+rtc_include_tests=false \
+use_rtti=true \
+rtc_use_h264=true \
+symbol_level=0")
+
+if(LINUX)
+	if(${TARGET_CPU} STREQUAL "arm")
+		set(COMPILE_ARGS "${COMPILE_ARGS} custom_toolchain=\"//build/toolchain/linux:clang_arm\"")
+	elseif(${TARGET_CPU} STREQUAL "arm64")
+		set(COMPILE_ARGS "${COMPILE_ARGS} custom_toolchain=\"//build/toolchain/linux:clang_arm64\"")
+	endif()
+endif()
+
 execute_command(
 	COMMAND gn gen ${WEBRTC_BUILD} --args=${COMPILE_ARGS}
 	WORKING_DIRECTORY "${WEBRTC_SRC}"
@@ -250,6 +347,70 @@ execute_command(
 
 if(LINUX)
 	sysroot_link()
+
+    if(LINUX AND NOT TARGET_CPU MATCHES "^arm")
+        # Collect lib++ objects
+        file(GLOB_RECURSE LibCPP_OBJS
+            ${WEBRTC_SRC}/${WEBRTC_BUILD}/obj/buildtools/third_party/libc++/libc++/*.o
+        )
+        # Collect lib++abi objects
+        file(GLOB_RECURSE LibCPP_ABI_OBJS
+            ${WEBRTC_SRC}/${WEBRTC_BUILD}/obj/buildtools/third_party/libc++abi/libc++abi/*.o
+        )
+        # Create static libraries
+        execute_command(
+            COMMAND ${CMAKE_AR} rcs ${WEBRTC_SRC}/${WEBRTC_BUILD}/obj/libc++.a ${LibCPP_OBJS}
+        )
+        execute_command(
+            COMMAND ${CMAKE_AR} rcs ${WEBRTC_SRC}/${WEBRTC_BUILD}/obj/libc++abi.a ${LibCPP_ABI_OBJS}
+        )
+        # Install libc++ and libc++abi headers and libraries
+        install(
+            FILES
+                "${WEBRTC_SRC}/${WEBRTC_BUILD}/obj/libc++.a"
+                "${WEBRTC_SRC}/${WEBRTC_BUILD}/obj/libc++abi.a"
+            DESTINATION
+                "${WEBRTC_INSTALL_DIR}/lib"
+        )
+        install(
+            DIRECTORY "${WEBRTC_SRC}/third_party/libc++/src/include"
+            DESTINATION "${WEBRTC_INSTALL_DIR}/include/third_party/libc++"
+        )
+        install(
+            DIRECTORY "${WEBRTC_SRC}/buildtools/third_party/libc++/"
+            DESTINATION "${WEBRTC_INSTALL_DIR}/include/third_party/libc++"
+        )
+        install(
+            DIRECTORY "${WEBRTC_SRC}/third_party/libc++abi/src/include"
+            DESTINATION "${WEBRTC_INSTALL_DIR}/include/third_party/libc++abi"
+        )
+    endif()
+elseif(WIN32)
+	# Collect lib++ objects
+	file(GLOB_RECURSE LibCPP_OBJS
+		${WEBRTC_SRC}/${WEBRTC_BUILD}/obj/buildtools/third_party/libc++/libc++/*.obj
+	)
+
+	# Create static libraries
+	execute_command(
+		COMMAND ${CMAKE_LINKER} /LIB /OUT:${WEBRTC_SRC}/${WEBRTC_BUILD}/obj/c++.lib ${LibCPP_OBJS}
+	)
+
+	# Install libc++ headers and libraries
+	install(
+		FILES
+			"${WEBRTC_SRC}/${WEBRTC_BUILD}/obj/c++.lib"
+		DESTINATION
+			"${WEBRTC_INSTALL_DIR}/lib"
+	)
+	install(
+		DIRECTORY "${WEBRTC_SRC}/third_party/libc++/src/include"
+		DESTINATION "${WEBRTC_INSTALL_DIR}/include/third_party/libc++"
+	)
+	install(
+		DIRECTORY "${WEBRTC_SRC}/buildtools/third_party/libc++/"
+		DESTINATION "${WEBRTC_INSTALL_DIR}/include/third_party/libc++"
+	)
 endif()
 
 message("Instal DESTINATION to ${WEBRTC_INSTALL_DIR}/include")
@@ -260,6 +421,7 @@ install(
 	DESTINATION "${WEBRTC_INSTALL_DIR}/include"
 	FILES_MATCHING
 		PATTERN "*.h"
+		PATTERN "*.inc"
 		REGEX /src/base/ EXCLUDE
 		REGEX /src/build/ EXCLUDE
 		REGEX /src/build_overrides/ EXCLUDE
@@ -293,4 +455,3 @@ install(CODE "
 		endif()
 	endforeach()
 ")
-

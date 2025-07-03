@@ -4,7 +4,7 @@
 
 	<groupId>dev.onvoid.webrtc</groupId>
 	<artifactId>webrtc-java-parent</artifactId>
-	<version>0.8.0</version>
+	<version>0.11.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>webrtc-java-parent</name>
@@ -72,12 +72,12 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-antrun-plugin</artifactId>
-					<version>1.8</version>
+					<version>3.1.0</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.10.1</version>
+					<version>3.11.0</version>
 					<executions>
 						<execution>
 							<id>default-compile</id>
@@ -114,7 +114,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-deploy-plugin</artifactId>
-					<version>3.0.0-M1</version>
+					<version>3.1.4</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -139,12 +139,12 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-install-plugin</artifactId>
-					<version>3.0.0-M1</version>
+					<version>3.1.1</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.2.0</version>
+					<version>3.3.0</version>
 					<configuration>
 						<archive>
 							<compress>true</compress>
@@ -183,7 +183,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-release-plugin</artifactId>
-					<version>3.0.0-M1</version>
+					<version>3.0.1</version>
 					<configuration>
 						<autoVersionSubmodules>true</autoVersionSubmodules>
 						<releaseProfiles>release</releaseProfiles>
@@ -200,7 +200,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-site-plugin</artifactId>
-					<version>4.0.0-M8</version>
+					<version>3.8.2</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -218,17 +218,17 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<version>3.1.2</version>
+					<version>3.2.2</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-report-plugin</artifactId>
-					<version>3.1.2</version>
+					<version>3.2.2</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-failsafe-plugin</artifactId>
-					<version>3.1.2</version>
+					<version>3.2.2</version>
 				</plugin>
 			</plugins>
 		</pluginManagement>
@@ -285,6 +285,32 @@
 			<properties>
 				<platform.classifier>linux-x86_64</platform.classifier>
 				<platform.module>webrtc.linux.x86_64</platform.module>
+			</properties>
+		</profile>
+		<profile>
+			<id>linux-aarch32</id>
+			<activation>
+				<os>
+					<family>linux</family>
+					<arch>aarch32</arch>
+				</os>
+			</activation>
+			<properties>
+				<platform.classifier>linux-aarch32</platform.classifier>
+				<platform.module>webrtc.linux.aarch32</platform.module>
+			</properties>
+		</profile>
+		<profile>
+			<id>linux-aarch64</id>
+			<activation>
+				<os>
+					<family>linux</family>
+					<arch>aarch64</arch>
+				</os>
+			</activation>
+			<properties>
+				<platform.classifier>linux-aarch64</platform.classifier>
+				<platform.module>webrtc.linux.aarch64</platform.module>
 			</properties>
 		</profile>
 		<profile>

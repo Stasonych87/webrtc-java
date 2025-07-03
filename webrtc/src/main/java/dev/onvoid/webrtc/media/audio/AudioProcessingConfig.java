@@ -32,7 +32,6 @@ public class AudioProcessingConfig {
 
 	public final NoiseSuppression noiseSuppression = new NoiseSuppression();
 
-	public final TransientSuppression transientSuppression = new TransientSuppression();
 
 
 	public static class EchoCanceller {
@@ -55,8 +54,10 @@ public class AudioProcessingConfig {
 
 			public boolean enabled;
 
-			/** Run the adaptive digital controller but the signal is not modified. */
-			public float maxGainChangeDbPerSecond = 3.0f;
+			public float headroomDb = 5.0f;
+			public float maxGainDb = 50.0f;
+			public float initialGainDb = 15.0f;
+			public float maxGainChangeDbPerSecond = 6.0f;
 			public float maxOutputNoiseLevelDbfs = -50.0f;
 
 		}
@@ -95,12 +96,6 @@ public class AudioProcessingConfig {
 		public boolean enabled;
 
 		public Level level;
-
-	}
-
-	public static class TransientSuppression {
-
-		public boolean enabled;
 
 	}
 }

@@ -1,5 +1,5 @@
-[![](https://github.com/devopvoid/webrtc-java/workflows/Maven%20CI/badge.svg)](https://github.com/devopvoid/webrtc-java/actions)
-[![](https://img.shields.io/maven-central/v/dev.onvoid.webrtc/webrtc-java.svg?label=Maven%20Central&logo=apache-maven)](https://search.maven.org/search?q=g:%22dev.onvoid.webrtc%22%20AND%20a:%22webrtc-java%22)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/devopvoid/webrtc-java/build.yml?label=Build&logo=github)](https://github.com/devopvoid/webrtc-java/actions)
+[![Maven Central](https://img.shields.io/maven-central/v/dev.onvoid.webrtc/webrtc-java?label=Maven%20Central&logo=apache-maven)](https://search.maven.org/artifact/dev.onvoid.webrtc/webrtc-java)
 
 ## webrtc-java
 
@@ -10,19 +10,22 @@
 
 ```xml
 <dependency>
-    <groupId>dev.onvoid.webrtc</groupId>
-    <artifactId>webrtc-java</artifactId>
-    <version>0.7.0</version>
+	<groupId>dev.onvoid.webrtc</groupId>
+	<artifactId>webrtc-java</artifactId>
+	<version>0.11.0</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```groovy
-implementation "dev.onvoid.webrtc:webrtc-java:0.7.0"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.7.0", classifier: "windows-x86_64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.7.0", classifier: "macos-x86_64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.7.0", classifier: "linux-x86_64"
+implementation "dev.onvoid.webrtc:webrtc-java:0.10.0"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "windows-x86_64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "macos-x86_64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "macos-aarch64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "linux-x86_64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "linux-aarch64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "linux-aarch32"
 ```
 -->
 
@@ -32,20 +35,32 @@ Maven Central artifacts contain native libraries that can be loaded on the follo
 
 <table>
   <tr>
-    <td>Linux</td>
-    <td>x86_64</td>
+    <td></td>
+    <td>x64</td>
+    <td>arm</td>
+    <td>arm64</td>
   </tr>
-  <tr>
-    <td>macOS</td>
-    <td>x86_64</td>
+  <tr align="center">
+    <th>Linux</th>
+    <td>✔</td>
+    <td>✔ armeabi-v7a</td>
+    <td>✔ arm64-v8a</td>
   </tr>
-  <tr>
-    <td>Windows</td>
-    <td>x86_64</td>
+  <tr align="center">
+    <th>macOS</th>
+    <td>✔</td>
+    <td>-</td>
+    <td>✔</td>
+  </tr>
+  <tr align="center">
+    <th>Windows</th>
+    <td>✔</td>
+    <td>-</td>
+    <td>-</td>
   </tr>
 </table>
 
-Нативные библиотеки созданы с использованием ветки WebRTC M112/5615.
+Нативные библиотеки созданы с использованием ветки WebRTC M137/6998.
 
 ### Примечание к сборке
 
@@ -59,7 +74,7 @@ sudo apt install -y build-essential libpulse-dev libudev-dev xorg-dev pulseaudio
 <table>
   <tr>
     <td>Linux</td>
-    <td><a href="https://webrtc.googlesource.com/src/+/refs/heads/master/docs/native-code/development/prerequisite-sw/index.md#linux-ubuntu_debian">Debian & Ubuntu</a>, <a href="https://chromium.googlesource.com/chromium/src/+/master/docs/linux/build_instructions.md#notes">other distros</a>
+    <td><a href="https://chromium.googlesource.com/chromium/src/+/master/docs/linux/build_instructions.md#system-requirements">Ubuntu</a>, <a href="https://chromium.googlesource.com/chromium/src/+/master/docs/linux/build_instructions.md#Notes-for-other-distros">other distros</a></td>
   </tr>
   <tr>
     <td>macOS</td>

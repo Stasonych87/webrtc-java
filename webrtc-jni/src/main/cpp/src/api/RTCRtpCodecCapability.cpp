@@ -35,9 +35,9 @@ namespace jni
 
 			JavaHashMap paramMap(env);
 
-			for (const std::pair<std::string, std::string> & param : capability.parameters) {
-				JavaLocalRef<jstring> key = JavaString::toJava(env, param.first);
-				JavaLocalRef<jstring> value = JavaString::toJava(env, param.second);
+			for (const auto & [p_key, p_value] : capability.parameters) {
+				JavaLocalRef<jstring> key = JavaString::toJava(env, p_key);
+				JavaLocalRef<jstring> value = JavaString::toJava(env, p_value);
 
 				paramMap.put(key, value);
 			}
@@ -61,12 +61,12 @@ namespace jni
 			JavaObject obj(env, capability);
 
 			webrtc::RtpCodecCapability codecCapability;
-			
+
 			codecCapability.kind = JavaEnums::toNative<cricket::MediaType>(env, obj.getObject(javaClass->mediaType));
 			codecCapability.name = JavaString::toNative(env, obj.getString(javaClass->name));
 			codecCapability.clock_rate = obj.getInt<int>(javaClass->clockRate);
 			codecCapability.num_channels = obj.getInt<int>(javaClass->channels);
-			
+
 			for (const auto & entry : JavaHashMap(env, obj.getObject(javaClass->sdpFmtp))) {
 				std::string key = JavaString::toNative(env, static_java_ref_cast<jstring>(env, entry.first));
 				std::string value = JavaString::toNative(env, static_java_ref_cast<jstring>(env, entry.second));

@@ -163,7 +163,7 @@ namespace jni
                 hr = deviceEnumerator->GetDevice(wDeviceID, &pDevice);
                 delete[] wDeviceID;
 
-                THROW_IF_FAILED(hr, "Audio Device Manager: Enumerator get device with ID: %S failed", device->getDescriptor());
+                THROW_IF_FAILED(hr, "Audio Device Manager: Enumerator get device with ID: %S failed", device->getDescriptor().c_str());
 
                 hr = pDevice->QueryInterface(__uuidof(IMMEndpoint), (void**)&endpoint);
                 THROW_IF_FAILED(hr, "Audio Device Manager: Device get endpoint failed");

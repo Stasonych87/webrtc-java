@@ -35,6 +35,20 @@
 #include "api/video_codecs/builtin_video_decoder_factory.h"
 #include "api/video_codecs/builtin_video_encoder_factory.h"
 
+#include "api/video_codecs/video_decoder_factory.h"
+#include "api/video_codecs/video_decoder_factory_template.h"
+#include "api/video_codecs/video_decoder_factory_template_dav1d_adapter.h"
+#include "api/video_codecs/video_decoder_factory_template_libvpx_vp8_adapter.h"
+#include "api/video_codecs/video_decoder_factory_template_libvpx_vp9_adapter.h"
+#include "api/video_codecs/video_decoder_factory_template_open_h264_adapter.h"
+#include "api/video_codecs/video_encoder.h"
+#include "api/video_codecs/video_encoder_factory.h"
+#include "api/video_codecs/video_encoder_factory_template.h"
+#include "api/video_codecs/video_encoder_factory_template_libaom_av1_adapter.h"
+#include "api/video_codecs/video_encoder_factory_template_libvpx_vp8_adapter.h"
+#include "api/video_codecs/video_encoder_factory_template_libvpx_vp9_adapter.h"
+#include "api/video_codecs/video_encoder_factory_template_open_h264_adapter.h"
+
 JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_PeerConnectionFactory_initialize
 (JNIEnv * env, jobject caller, jobject audioModule, jobject audioProcessing)
 {
@@ -60,18 +74,28 @@ JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_PeerConnectionFactory_initialize
 		webrtc::AudioProcessing * processing = (audioProcessing != nullptr)
 			? GetHandle<webrtc::AudioProcessing>(env, audioProcessing)
 			: nullptr;
+		rtc::scoped_refptr<webrtc::AudioProcessing> apm(processing);
+		rtc::scoped_refptr<webrtc::AudioDeviceModule> adm(audioDevModule);
 
 		auto factory = webrtc::CreatePeerConnectionFactory(
 			networkThread.get(),
 			workerThread.get(),
 			signalingThread.get(),
-            rtc::scoped_refptr<webrtc::AudioDeviceModule>(audioDevModule),
+			adm,
 			webrtc::CreateBuiltinAudioEncoderFactory(),
 			webrtc::CreateBuiltinAudioDecoderFactory(),
-			webrtc::CreateBuiltinVideoEncoderFactory(),
-			webrtc::CreateBuiltinVideoDecoderFactory(),
+			std::make_unique<webrtc::VideoEncoderFactoryTemplate<
+				webrtc::LibvpxVp8EncoderTemplateAdapter,
+				webrtc::LibvpxVp9EncoderTemplateAdapter,
+				webrtc::OpenH264EncoderTemplateAdapter,
+				webrtc::LibaomAv1EncoderTemplateAdapter>>(),
+			std::make_unique<webrtc::VideoDecoderFactoryTemplate<
+				webrtc::LibvpxVp8DecoderTemplateAdapter,
+				webrtc::LibvpxVp9DecoderTemplateAdapter,
+				webrtc::OpenH264DecoderTemplateAdapter,
+				webrtc::Dav1dDecoderTemplateAdapter>>(),
 			nullptr,
-            rtc::scoped_refptr<webrtc::AudioProcessing>(processing));
+			apm);
 
 		if (factory != nullptr) {
 			SetHandle(env, caller, factory.release());
@@ -98,9 +122,9 @@ JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_PeerConnectionFactory_dispose
 	rtc::Thread * signalingThread = GetHandle<rtc::Thread>(env, caller, "signalingThreadHandle");
 	rtc::Thread * workerThread = GetHandle<rtc::Thread>(env, caller, "workerThreadHandle");
 
-	rtc::RefCountReleaseStatus status = factory->Release();
+	webrtc::RefCountReleaseStatus status = factory->Release();
 
-	if (status != rtc::RefCountReleaseStatus::kDroppedLastRef) {
+	if (status != webrtc::RefCountReleaseStatus::kDroppedLastRef) {
 		env->Throw(jni::JavaError(env, "Native object was not deleted. A reference is still around somewhere."));
 	}
 
@@ -195,7 +219,8 @@ JNIEXPORT jobject JNICALL Java_dev_onvoid_webrtc_PeerConnectionFactory_createVid
 
 	std::string label = jni::JavaString::toNative(env, jni::JavaLocalRef<jstring>(env, jlabel));
 
-	rtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack = factory->CreateVideoTrack(label, source);
+	rtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack = factory->CreateVideoTrack(
+		rtc::scoped_refptr<webrtc::VideoTrackSourceInterface>(source), label);
 
 	return jni::JavaFactories::create(env, videoTrack.release()).release();
 }

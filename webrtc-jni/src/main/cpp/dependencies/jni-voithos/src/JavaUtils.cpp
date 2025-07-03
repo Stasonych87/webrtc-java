@@ -16,12 +16,14 @@
 #include "JavaThreadEnv.h"
 #include "JavaWrappedException.h"
 
+#include <exception>
 #include <ios>
 
 bool ExceptionCheck(JNIEnv * env)
 {
 	if (env->ExceptionCheck()) {
 		jthrowable exception = env->ExceptionOccurred();
+		env->ExceptionDescribe();
 		env->ExceptionClear();
 
 		if (exception) {
@@ -123,7 +125,7 @@ jfieldID GetFieldID(JNIEnv * env, jobject obj, const std::string & fieldName, co
 jfieldID GetFieldID(JNIEnv * env, jclass cls, const std::string & fieldName, const char * type)
 {
 	jfieldID field = env->GetFieldID(cls, fieldName.c_str(), type);
-	
+
 	if (field == nullptr) {
 		ExceptionCheck(env);
 		return nullptr;

@@ -53,8 +53,6 @@ class AudioProcessingTest {
 		config.noiseSuppression.enabled = true;
 		config.noiseSuppression.level = NoiseSuppression.Level.HIGH;
 
-		config.transientSuppression.enabled = true;
-
 		audioProcessing.applyConfig(config);
 	}
 

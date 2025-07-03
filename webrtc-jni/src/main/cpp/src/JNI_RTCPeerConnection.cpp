@@ -574,12 +574,12 @@ JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_RTCPeerConnection_getStats__Ldev_o
 		return;
 	}
 
-	webrtc::RtpReceiverInterface * sender = GetHandle<webrtc::RtpReceiverInterface>(env, jsender);
+	webrtc::RtpSenderInterface * sender = GetHandle<webrtc::RtpSenderInterface>(env, jsender);
 	CHECK_HANDLE(sender);
 
 	auto callback = new rtc::RefCountedObject<jni::RTCStatsCollectorCallback>(env, jni::JavaGlobalRef<jobject>(env, jcallback));
 
-	pc->GetStats(rtc::scoped_refptr<webrtc::RtpReceiverInterface>(sender), rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>(callback));
+	pc->GetStats(rtc::scoped_refptr<webrtc::RtpSenderInterface>(sender), rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>(callback));
 }
 
 JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_RTCPeerConnection_restartIce

@@ -109,9 +109,9 @@ JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_media_MediaStream_dispose
 	webrtc::MediaStreamInterface * stream = GetHandle<webrtc::MediaStreamInterface>(env, caller);
 	CHECK_HANDLE(stream);
 
-	rtc::RefCountReleaseStatus status = stream->Release();
+	webrtc::RefCountReleaseStatus status = stream->Release();
 
-	if (status != rtc::RefCountReleaseStatus::kDroppedLastRef) {
+	if (status != webrtc::RefCountReleaseStatus::kDroppedLastRef) {
 		RTC_LOG(LS_WARNING) << "Native object was not deleted. A reference is still around somewhere.";
 	}
 

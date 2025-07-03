@@ -38,7 +38,6 @@ namespace jni
 				jfieldID gainControl;
 				jfieldID highPassFilter;
 				jfieldID noiseSuppression;
-				jfieldID transientSuppression;
 		};
 
 		webrtc::AudioProcessing::Config toNative(JNIEnv * env, const JavaRef<jobject> & javaType);
@@ -82,6 +81,9 @@ namespace jni
 
 				jclass cls;
 				jfieldID enabled;
+				jfieldID headroomDb;
+				jfieldID maxGainDb;
+				jfieldID initialGainDb;
 				jfieldID maxGainChangeDbPerSecond;
 				jfieldID maxOutputNoiseLevelDbfs;
 		};
@@ -103,15 +105,6 @@ namespace jni
 				jclass cls;
 				jfieldID enabled;
 				jfieldID level;
-		};
-
-		class JavaTransientSuppressionClass : public JavaClass
-		{
-			public:
-				explicit JavaTransientSuppressionClass(JNIEnv * env);
-
-				jclass cls;
-				jfieldID enabled;
 		};
 	}
 }

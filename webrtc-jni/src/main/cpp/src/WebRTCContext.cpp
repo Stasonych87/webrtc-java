@@ -33,14 +33,17 @@
 #include <windows.h>
 #include "media/audio/windows/WindowsAudioDeviceManager.h"
 #include "media/video/windows/WindowsVideoDeviceManager.h"
+#include "media/video/desktop/windows/WindowsPowerManagement.h"
 #endif
 #ifdef __linux__
 #include "media/audio/linux/PulseAudioDeviceManager.h"
 #include "media/video/linux/V4l2VideoDeviceManager.h"
+#include "media/video/desktop/linux/LinuxPowerManagement.h"
 #endif
 #ifdef __APPLE__
 #include "media/audio/macos/CoreAudioDeviceManager.h"
 #include "media/video/macos/AVFVideoDeviceManager.h"
+#include "media/video/desktop/macos/MacOSPowerManagement.h"
 #endif
 
 #include <memory>
@@ -50,7 +53,8 @@ namespace jni
 	WebRTCContext::WebRTCContext(JavaVM * vm) :
 		JavaContext(vm),
 		audioDevManager(nullptr),
-		videoDevManager(nullptr)
+		videoDevManager(nullptr),
+		powerManagement(nullptr)
 	{
 	}
 
@@ -102,7 +106,7 @@ namespace jni
 
 	void WebRTCContext::initializeClassLoader(JNIEnv* env, const char * loaderName)
 	{
-		auto javaClass = JavaLocalRef<jclass>(env, FindClass(env, loaderName));
+		jclass javaClass = FindClass(env, loaderName);
 
 		if (ExceptionCheck(env)) {
 			return;
@@ -147,6 +151,17 @@ namespace jni
 		return videoDevManager.get();
 	}
 
+	avdev::PowerManagement * WebRTCContext::getPowerManagement()
+    {
+    	std::unique_lock<std::mutex> mlock(vMutex);
+
+    	if (powerManagement == nullptr) {
+    		initializePowerManagement();
+    	}
+
+    	return powerManagement.get();
+    }
+
 	void WebRTCContext::initializeAudioManager()
 	{
 #ifdef _WIN32
@@ -170,6 +185,19 @@ namespace jni
 #endif
 #ifdef __APPLE__
 		videoDevManager = std::make_unique<avdev::AVFVideoDeviceManager>();
+#endif
+	}
+
+	void WebRTCContext::initializePowerManagement()
+	{
+#ifdef _WIN32
+		powerManagement = std::make_unique<avdev::WindowsPowerManagement>();
+#endif
+#ifdef __linux__
+		powerManagement = std::make_unique<avdev::LinuxPowerManagement>();
+#endif
+#ifdef __APPLE__
+		powerManagement = std::make_unique<avdev::MacOSPowerManagement>();
 #endif
 	}
 }

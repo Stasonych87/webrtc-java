@@ -33,23 +33,18 @@ namespace jni
 			const auto javaEchoCancellerClass = JavaClasses::get<JavaEchoCancellerClass>(env);
 			const auto javaHighPassFilterClass = JavaClasses::get<JavaHighPassFilterClass>(env);
 			const auto javaNoiseSuppressionClass = JavaClasses::get<JavaNoiseSuppressionClass>(env);
-			const auto javaTransientSuppressionClass = JavaClasses::get<JavaTransientSuppressionClass>(env);
 			
 			JavaObject obj(env, javaType);
 			JavaObject echoCanceller(env, obj.getObject(javaClass->echoCanceller));
 			JavaObject highPassFilter(env, obj.getObject(javaClass->highPassFilter));
 			JavaObject noiseSuppression(env, obj.getObject(javaClass->noiseSuppression));
-			JavaObject transientSuppression(env, obj.getObject(javaClass->transientSuppression));
 
 			webrtc::AudioProcessing::Config config;
 			
 			config.echo_canceller.enabled = echoCanceller.getBoolean(javaEchoCancellerClass->enabled);
 			config.echo_canceller.enforce_high_pass_filtering = echoCanceller.getBoolean(javaEchoCancellerClass->enforceHighPassFiltering);
-
 			config.gain_controller2 = toGainController2(env, obj.getObject(javaClass->gainControl));
-
 			config.high_pass_filter.enabled = highPassFilter.getBoolean(javaHighPassFilterClass->enabled);
-
 			config.noise_suppression.enabled = noiseSuppression.getBoolean(javaNoiseSuppressionClass->enabled);
 
 			JavaLocalRef<jobject> nsLevel = noiseSuppression.getObject(javaNoiseSuppressionClass->level);
@@ -57,8 +52,6 @@ namespace jni
 			if (nsLevel.get()) {
 				config.noise_suppression.level = jni::JavaEnums::toNative<webrtc::AudioProcessing::Config::NoiseSuppression::Level>(env, nsLevel);
 			}
-
-			config.transient_suppression.enabled = transientSuppression.getBoolean(javaTransientSuppressionClass->enabled);
 			
 			return config;
 		}
@@ -78,15 +71,10 @@ namespace jni
 			gainController.enabled = gainControl.getBoolean(javaGainControlClass->enabled);
 			gainController.fixed_digital.gain_db = gainControlFixedDigital.getFloat(javaGainControlFixedDigitalClass->gainDb);
 			gainController.adaptive_digital.enabled = gainControlAdaptiveDigital.getBoolean(javaGainControlAdaptiveDigitalClass->enabled);
-            // TODO(bugs.webrtc.org/7494): Remove `dry_run`.
-            // When true, the adaptive digital controller runs but the signal is not
-            // modified. dfba28e30eaa791147c98e34ef0476e99eb93f5e
-//			gainController.adaptive_digital.dry_run = gainControlAdaptiveDigital.getBoolean(javaGainControlAdaptiveDigitalClass->dryRun); todo
-            // TODO(bugs.webrtc.org/7494): Hard-code and remove parameter below. dfba28e30eaa791147c98e34ef0476e99eb93f5e
-//			gainController.adaptive_digital.vad_reset_period_ms = gainControlAdaptiveDigital.getInt(javaGainControlAdaptiveDigitalClass->vadResetPeriodMs); todo
-            // TODO(bugs.webrtc.org/7494): Hard-code and remove parameter below. dfba28e30eaa791147c98e34ef0476e99eb93f5e
-//			gainController.adaptive_digital.adjacent_speech_frames_threshold = gainControlAdaptiveDigital.getInt(javaGainControlAdaptiveDigitalClass->adjacentSpeechFramesThreshold); todo
-            gainController.adaptive_digital.max_gain_change_db_per_second = gainControlAdaptiveDigital.getFloat(javaGainControlAdaptiveDigitalClass->maxGainChangeDbPerSecond);
+			gainController.adaptive_digital.headroom_db = gainControlAdaptiveDigital.getFloat(javaGainControlAdaptiveDigitalClass->headroomDb);
+			gainController.adaptive_digital.initial_gain_db = gainControlAdaptiveDigital.getFloat(javaGainControlAdaptiveDigitalClass->initialGainDb);
+			gainController.adaptive_digital.max_gain_db = gainControlAdaptiveDigital.getFloat(javaGainControlAdaptiveDigitalClass->maxGainDb);
+			gainController.adaptive_digital.max_gain_change_db_per_second = gainControlAdaptiveDigital.getFloat(javaGainControlAdaptiveDigitalClass->maxGainChangeDbPerSecond);
 			gainController.adaptive_digital.max_output_noise_level_dbfs = gainControlAdaptiveDigital.getFloat(javaGainControlAdaptiveDigitalClass->maxOutputNoiseLevelDbfs);
 
 			return gainController;
@@ -100,7 +88,6 @@ namespace jni
 			gainControl = GetFieldID(env, cls, "gainControl", "L" PKG_AUDIO "AudioProcessingConfig$GainControl;");
 			highPassFilter = GetFieldID(env, cls, "highPassFilter", "L" PKG_AUDIO "AudioProcessingConfig$HighPassFilter;");
 			noiseSuppression = GetFieldID(env, cls, "noiseSuppression", "L" PKG_AUDIO "AudioProcessingConfig$NoiseSuppression;");
-			transientSuppression = GetFieldID(env, cls, "transientSuppression", "L" PKG_AUDIO "AudioProcessingConfig$TransientSuppression;");
 		}
 
 		JavaEchoCancellerClass::JavaEchoCancellerClass(JNIEnv* env)
@@ -132,6 +119,9 @@ namespace jni
 			cls = FindClass(env, PKG_AUDIO"AudioProcessingConfig$GainControl$AdaptiveDigital");
 
 			enabled = GetFieldID(env, cls, "enabled", "Z");
+			headroomDb = GetFieldID(env, cls, "headroomDb", "F");
+			maxGainDb = GetFieldID(env, cls, "maxGainDb", "F");
+			initialGainDb = GetFieldID(env, cls, "initialGainDb", "F");
 			maxGainChangeDbPerSecond = GetFieldID(env, cls, "maxGainChangeDbPerSecond", "F");
 			maxOutputNoiseLevelDbfs = GetFieldID(env, cls, "maxOutputNoiseLevelDbfs", "F");
 		}
@@ -149,13 +139,6 @@ namespace jni
 
 			enabled = GetFieldID(env, cls, "enabled", "Z");
 			level = GetFieldID(env, cls, "level", "L" PKG_AUDIO "AudioProcessingConfig$NoiseSuppression$Level;");
-		}
-
-		JavaTransientSuppressionClass::JavaTransientSuppressionClass(JNIEnv* env)
-		{
-			cls = FindClass(env, PKG_AUDIO"AudioProcessingConfig$TransientSuppression");
-
-			enabled = GetFieldID(env, cls, "enabled", "Z");
 		}
 	}
 }

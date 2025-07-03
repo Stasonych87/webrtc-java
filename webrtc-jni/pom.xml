@@ -5,28 +5,25 @@
 	<parent>
 		<groupId>dev.onvoid.webrtc</groupId>
 		<artifactId>webrtc-java-parent</artifactId>
-		<version>0.8.0</version>
+		<version>0.11.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>webrtc-java-jni</artifactId>
 	<packaging>pom</packaging>
 
 	<properties>
-		<webrtc.branch>branch-heads/5615</webrtc.branch>
+		<webrtc.branch>branch-heads/6998</webrtc.branch>
 		<webrtc.src.dir>${user.home}/webrtc</webrtc.src.dir>
 		<webrtc.install.dir>${user.home}/webrtc/build</webrtc.install.dir>
 		<cmake.build.type>Release</cmake.build.type>
+		<cmake.toolchain.file />
+		<cmake.clang />
 	</properties>
 
 	<build>
+		<finalName>webrtc-java-${project.version}</finalName>
+
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-deploy-plugin</artifactId>
-				<configuration>
-					<skip>true</skip>
-				</configuration>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
@@ -39,7 +36,6 @@
 						<configuration>
 							<classifier>${platform.classifier}</classifier>
 							<classesDirectory>${project.build.directory}/lib</classesDirectory>
-							<finalName>webrtc-java-${project.version}</finalName>
 							<archive>
 								<addMavenDescriptor>false</addMavenDescriptor>
 								<manifestEntries>
@@ -78,7 +74,7 @@
 			<plugin>
 				<groupId>com.googlecode.cmake-maven-project</groupId>
 				<artifactId>cmake-maven-plugin</artifactId>
-				<version>3.23.2-b1</version>
+				<version>3.22.1-b1</version>
 				<executions>
 					<execution>
 						<id>cmake-generate</id>
@@ -92,6 +88,12 @@
 							<options>
 								<option>
 									"${cmake.options}"
+								</option>
+								<option>
+									"${cmake.clang}"
+								</option>
+								<option>
+									-DWEBRTC_TOOLCHAIN_FILE=${cmake.toolchain.file}
 								</option>
 								<option>
 									-DWEBRTC_BRANCH=${webrtc.branch}
@@ -140,6 +142,55 @@
 			<properties>
 				<cmake.options>-Ax64</cmake.options>
 				<cmake.config>${cmake.build.type}</cmake.config>
+			</properties>
+		</profile>
+		<profile>
+			<id>windows-clang</id>
+			<activation>
+				<os>
+					<family>windows</family>
+					<arch>amd64</arch>
+				</os>
+			</activation>
+			<properties>
+				<cmake.clang>-T ClangCL</cmake.clang>
+				<cmake.toolchain.file>toolchain/x86_64-windows-clang.cmake</cmake.toolchain.file>
+			</properties>
+		</profile>
+		<profile>
+			<id>linux-x86_64</id>
+			<activation>
+				<os>
+					<family>linux</family>
+					<arch>amd64</arch>
+				</os>
+			</activation>
+			<properties>
+				<cmake.toolchain.file>toolchain/x86_64-linux-clang.cmake</cmake.toolchain.file>
+			</properties>
+		</profile>
+		<profile>
+			<id>linux-aarch32</id>
+			<activation>
+				<os>
+					<family>linux</family>
+					<arch>aarch32</arch>
+				</os>
+			</activation>
+			<properties>
+				<cmake.toolchain.file>toolchain/aarch32-linux-clang.cmake</cmake.toolchain.file>
+			</properties>
+		</profile>
+		<profile>
+			<id>linux-aarch64</id>
+			<activation>
+				<os>
+					<family>linux</family>
+					<arch>aarch64</arch>
+				</os>
+			</activation>
+			<properties>
+				<cmake.toolchain.file>toolchain/aarch64-linux-clang.cmake</cmake.toolchain.file>
 			</properties>
 		</profile>
 	</profiles>

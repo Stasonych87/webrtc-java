@@ -29,13 +29,12 @@ namespace jni
 	class AudioConverter
 	{
 		public:
-			static std::unique_ptr<AudioConverter> create(size_t srcFrames, size_t srcChannels, size_t dstFrames, size_t dstChannels);
-			
-			virtual ~AudioConverter() = default;
+			AudioConverter(const AudioConverter&) = delete;
+			AudioConverter& operator=(const AudioConverter&) = delete;
 
-			// Disallow copy and assignment
-            AudioConverter(const AudioConverter &) = delete;
-            AudioConverter & operator=(const AudioConverter &) = delete;
+			static std::unique_ptr<AudioConverter> create(size_t srcFrames, size_t srcChannels, size_t dstFrames, size_t dstChannels);
+
+			virtual ~AudioConverter() = default;
 
 			virtual void convert(const int16_t * src, size_t srcSize, int16_t * dst, size_t dstSize) = 0;
 
@@ -54,7 +53,6 @@ namespace jni
 			const size_t srcChannels;
 			const size_t dstFrames;
 			const size_t dstChannels;
-
 	};
 }
 
