@@ -68,10 +68,10 @@ runs:
         MAVEN_TOKEN: ${{ inputs.maven-password }}
       run: |
         if [ "${{ inputs.platform-name }}" == "linux_arm" ]; then
-          mvn deploy -DskipTests -Plinux-aarch32
+          mvn deploy -DskipTests -Plinux-aarch32 -s settings.xml
         elif [ "${{ inputs.platform-name }}" == "linux_arm64" ]; then
-          mvn deploy -DskipTests -Plinux-aarch64
+          mvn deploy -DskipTests -Plinux-aarch64 -s settings.xml
         else
-          mvn deploy -DskipTests
+          mvn deploy -DskipTests -s settings.xml
         fi
       shell: bash

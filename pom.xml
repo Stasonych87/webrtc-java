@@ -31,48 +31,34 @@
 		</license>
 	</licenses>
 
-	<issueManagement>
-		<system>GitHub</system>
-		<url>https://github.com/devopvoid/webrtc-java/issues</url>
-	</issueManagement>
+<!--	<issueManagement>-->
+<!--		<system>GitHub</system>-->
+<!--		<url>https://github.com/devopvoid/webrtc-java/issues</url>-->
+<!--	</issueManagement>-->
 
-	<scm>
-		<connection>scm:git:git://github.com/devopvoid/webrtc-java.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/devopvoid/webrtc-java.git</developerConnection>
-		<url>https://github.com/devopvoid/webrtc-java/tree/master</url>
-		<tag>HEAD</tag>
-	</scm>
+<!--	<scm>-->
+<!--		<connection>scm:git:git://github.com/devopvoid/webrtc-java.git</connection>-->
+<!--		<developerConnection>scm:git:ssh://git@github.com/devopvoid/webrtc-java.git</developerConnection>-->
+<!--		<url>https://github.com/devopvoid/webrtc-java/tree/master</url>-->
+<!--		<tag>HEAD</tag>-->
+<!--	</scm>-->
 
 	<repositories>
 		<repository>
 			<id>gitlab-maven</id>
 			<url>https://gitlab.1c-connect.com/api/v4/projects/120/packages/maven</url>
-			<!--			<id>nexus-snapshots</id>-->
-			<!--			<url>http://194.67.213.141:8081/repository/maven-releases/</url>-->
 		</repository>
 	</repositories>
-	<!--	<pluginRepositories>-->
-	<!--		<pluginRepository>-->
-	<!--			<id>nexus-repo</id>-->
-	<!--			<name>Nexus repo</name>-->
-	<!--			<url>http://194.67.213.141:8081/repository/maven-public/</url>-->
-	<!--			<releases>-->
-	<!--				<enabled>true</enabled>-->
-	<!--			</releases>-->
-	<!--			<snapshots>-->
-	<!--				<enabled>true</enabled>-->
-	<!--			</snapshots>-->
-	<!--		</pluginRepository>-->
-	<!--	</pluginRepositories>-->
+
 	<distributionManagement>
-		<snapshotRepository>
-			<id>gitlab-maven</id>
-			<url>https://gitlab.1c-connect.com/api/v4/projects/120/packages/maven</url>
-		</snapshotRepository>
 		<repository>
 			<id>gitlab-maven</id>
 			<url>https://gitlab.1c-connect.com/api/v4/projects/120/packages/maven</url>
 		</repository>
+		<snapshotRepository>
+			<id>gitlab-maven</id>
+			<url>https://gitlab.1c-connect.com/api/v4/projects/120/packages/maven</url>
+		</snapshotRepository>
 	</distributionManagement>
 
 	<properties>
@@ -275,10 +261,10 @@
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
 					</plugin>
-					<plugin>
+					<!--<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
-					</plugin>
+					</plugin>-->
 				</plugins>
 			</build>
 		</profile>
