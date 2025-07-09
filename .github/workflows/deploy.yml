@@ -38,21 +38,6 @@ jobs:
         name: Prepare build
         uses: ./.github/actions/prepare-windows
 
-      - uses: s4u/maven-settings-action@v3.1.0
-        with:
-          servers: |
-            [{
-              "id": "gitlab-maven",
-              "configuration": {
-                  "httpHeaders": {
-                      "property" : {
-                        "name": "Private-Token",
-                        "value": "${{ secrets.GITLAB_TOKEN }}"
-                      }
-                  }
-              }
-            }]
-
       - id: maven-build
         name: Maven build
         uses: ./.github/actions/build
