@@ -34,6 +34,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - id: prepare
+        name: Prepare build
+        uses: ./.github/actions/prepare-windows
+
       - uses: s4u/maven-settings-action@v3.1.0
         with:
           servers: |
@@ -48,10 +52,6 @@ jobs:
                   },
               }
             }]
-
-      - id: prepare
-        name: Prepare build
-        uses: ./.github/actions/prepare-windows
 
       - id: maven-build
         name: Maven build
