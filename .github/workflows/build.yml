@@ -46,6 +46,7 @@ jobs:
           platform-name: ${{ matrix.platform.name }}
           maven-username: ${{ secrets.MAVEN_USERNAME }}
           maven-password: ${{ secrets.MAVEN_TOKEN }}
+          gitlab-token: ${{ secrets.GITLAB_TOKEN }}
 
   build-linux:
     strategy:

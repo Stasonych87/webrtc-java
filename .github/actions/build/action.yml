@@ -66,6 +66,7 @@ runs:
       env:
         MAVEN_USERNAME: ${{ inputs.maven-username }}
         MAVEN_TOKEN: ${{ inputs.maven-password }}
+        GITLAB_TOKEN: ${{ inputs.gitlab-token }}
       run: |
         if [ "${{ inputs.platform-name }}" == "linux_arm" ]; then
           mvn deploy -DskipTests -Plinux-aarch32 -s settings.xml
