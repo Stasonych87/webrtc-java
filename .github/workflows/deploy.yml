@@ -43,7 +43,7 @@ jobs:
                   "httpHeaders": {
                       "property" : {
                         "name": "Private-Token",
-                        "value": ${{secrets.GITLAB_TOKEN}},
+                        "value": "${{secrets.GITLAB_TOKEN}}",
                       },
                   },
               }
