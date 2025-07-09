@@ -34,6 +34,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - uses: s4u/maven-settings-action@v3.1.0
+        with:
+          servers: |
+            [{
+              "id": "gitlab-maven",
+              "configuration": {
+                  "httpHeaders": {
+                      "property" : {
+                        "name": "Private-Token",
+                        "value": ${{secrets.GITLAB_TOKEN}},
+                      },
+                  },
+              }
+            }]
+
       - id: prepare
         name: Prepare build
         uses: ./.github/actions/prepare-windows
