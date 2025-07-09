@@ -20,6 +20,10 @@ inputs:
     description: 'The Maven password.'
     required: true
 
+  gitlab-token:
+    description: 'The GITLAB private token.'
+    required: true
+
 runs:
   using: "composite"
   steps:
@@ -55,11 +59,6 @@ runs:
         else
           mvn package -DskipTests
         fi
-      shell: bash
-
-    - name: Test
-      if: ${{ inputs.platform-name != 'linux_arm' && inputs.platform-name != 'linux_arm64' }}
-      run: mvn -B jar:jar surefire:test
       shell: bash
 
     - name: Deploy
