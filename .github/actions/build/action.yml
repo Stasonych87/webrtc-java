@@ -50,6 +50,21 @@ runs:
         server-username: MAVEN_USERNAME
         server-password: MAVEN_TOKEN
 
+    - uses: s4u/maven-settings-action@v3.1.0
+      with:
+        servers: |
+          [{
+            "id": "gitlab-maven",
+            "configuration": {
+                "httpHeaders": {
+                    "property" : {
+                      "name": "Private-Token",
+                      "value": "${{ inputs.gitlab-token }}"
+                    }
+                }
+            }
+          }]
+
     - name: Build
       run: |
         if [ "${{ inputs.platform-name }}" == "linux_arm" ]; then

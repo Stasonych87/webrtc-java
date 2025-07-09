@@ -44,3 +44,4 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           platform-name: ${{ matrix.platform.name }}
+          gitlab-token: ${{ secrets.GITLAB_TOKEN }}
