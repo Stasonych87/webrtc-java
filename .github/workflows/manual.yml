@@ -33,4 +33,4 @@ jobs:
 
     - name: Get Token    
       run: |
-        echo $(curl https://gitlab.1c-connect.com/api/v4/projects/120/packages/maven -header "Content-Type: application/json" -header "PRIVATE-TOKEN: ${{ secrets.GITLAB_TOKEN }}")     
+        echo $(curl "https://gitlab.1c-connect.com/api/v4/projects/120/packages/maven" --header "Content-Type: application/json" --header "PRIVATE-TOKEN: ${{ secrets.GITLAB_TOKEN }}")     
