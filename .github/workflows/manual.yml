@@ -33,4 +33,4 @@ jobs:
 
     - name: Get Token    
       run: |
-        curl --location --request GET "https://gitlab.1c-connect.com/api/v4/projects/120/packages/maven" --header "Content-Type: application/json"     
+        curl --location --request GET "https://ya.ru" --header "Content-Type: application/json"     
