@@ -76,9 +76,11 @@ runs:
         fi
       shell: bash
 
-#  - name: Download all workflow run artifacts
-#    uses: actions/download-artifact@v4
-#    github-token:
+  - name: Download Artifacts
+    uses: actions/download-artifact@v4
+    with:
+      name: maven-webrtc-application
+      path: /opt
 
 #    - name: Deploy
 #      env:
