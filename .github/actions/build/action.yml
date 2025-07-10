@@ -76,7 +76,11 @@ runs:
         fi
       shell: bash
 
-    - name: Create Artufacts Dir
+    - name: Show current Dir
+      run: ls -R
+      shell: bash
+
+    - name: Create Artifacts Dir
       run: mkdir artifacts && cp target/*.jar artifacts
       shell: bash
 
