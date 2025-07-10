@@ -77,7 +77,7 @@ runs:
       shell: bash
 
     - name: Show current Dir
-      run: ls -R
+      run: ls
       shell: bash
 
     - name: Create Artifacts Dir
