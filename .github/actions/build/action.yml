@@ -77,11 +77,11 @@ runs:
       shell: bash
 
     - name: Show current Dir
-      run: ls
+      run: ls ./webrtc/target && ls ./webrtc-jni/target
       shell: bash
 
     - name: Create Artifacts Dir
-      run: mkdir artifacts && cp target/*.jar artifacts
+      run: mkdir artifacts && cp ./webrtc-jni/target/*.jar artifacts cp ./webrtc/target/*.jar artifacts
       shell: bash
 
     - name: Download Artifacts
