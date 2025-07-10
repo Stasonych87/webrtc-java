@@ -37,13 +37,16 @@ jobs:
     # Runs a single command using the runners shell
     - name: Send greeting
       run: echo "Hello ${{ inputs.name }}"
+    - name: Create Artufacts Dir
+      run: |
+        mkdir -p C:/Users/artifacts
     - name: Download Artifacts
       uses: actions/download-artifact@v4
       with:
-        path: $HOME/artifacts
+        path: C:/Users/artifacts
 
     - name: List Artifacts
-      run: dir $HOME/artifacts
+      run: dir C:/Users/artifacts
 
     # - name: Get Token    
     #   run: |
