@@ -76,6 +76,19 @@ runs:
         fi
       shell: bash
 
+    - name: Create Artufacts Dir
+      run: mkdir artifacts && cp target/*.jar artifacts
+      shell: bash
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: List Artifacts
+      run: dir artifacts
+      shell: bash
+
 #    - name: Deploy
 #      env:
 #        MAVEN_USERNAME: ${{ inputs.maven-username }}
