@@ -45,11 +45,12 @@ jobs:
           java-version: ${{ matrix.java }}
           platform-name: ${{ matrix.platform.name }}
           gitlab-token: ${{ secrets.GITLAB_TOKEN }}
+      - name: Create Artufacts Dir
+        run: |
+          mkdir -p $HOME/artifacts
 
       - name: Download Artifacts
         uses: actions/download-artifact@v4
-        run: |
-          mkdir -p $HOME/artifacts
         with:
           path: $HOME/artifacts
 
