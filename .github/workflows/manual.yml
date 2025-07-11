@@ -46,7 +46,7 @@ jobs:
     - name: Archive Artifact
       uses: actions/upload-artifact@v4
       with:
-        path: C:/Users/artifacts/test_artifact.txt
+        path: C:/Users/artifacts/*.txt
     - name: Create Artifacts Dir
       run: |
         mkdir -p C:/Users/allartifacts
