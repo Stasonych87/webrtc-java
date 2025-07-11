@@ -39,7 +39,7 @@ jobs:
       run: echo "Hello ${{ inputs.name }}"
     - name: Create Artifacts Dir
       run: |
-        mkdir -p C:/Users/artifacts && touch C:/Users/artifacts/test_artifact.txt
+        mkdir -p C:/Users/artifacts && touch C:/Users/artifacts/test_artifact.txt && touch C:/Users/artifacts/test_artifact2.txt
     # - name: Create Artifacts Dir
     #   run: |
     #     mkdir -p C:/Users/artifacts && touch C:/Users/artifacts/test_artifact.txt
