@@ -83,11 +83,13 @@ runs:
     - name: Archive Artifact 1
       uses: actions/upload-artifact@v4
       with:
+        name: webrtc_jni_windows
         path: ./webrtc-jni/target/*.jar
 
     - name: Archive Artifact 1
       uses: actions/upload-artifact@v4
       with:
+        name: webrtc_java
         path: ./webrtc/target/*.jar
 
 #    - name: Create Artifacts Dir
@@ -100,6 +102,13 @@ runs:
     - name: Download Artifacts
       uses: actions/download-artifact@v4
       with:
+        name: webrtc_jni_windows
+        path: artifacts
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: webrtc_java
         path: artifacts
 
     - name: List Artifacts
