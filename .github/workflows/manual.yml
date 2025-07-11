@@ -51,7 +51,7 @@ jobs:
     - name: Archive Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: webrtc_java_${{ inputs.platform-name }}
+        name: webrtc_java_${{ matrix.platform.name }}
         path: |
           C:/Users/artifacts/*.txt
           C:/Users/artifacts2/*.txt
@@ -61,7 +61,7 @@ jobs:
     - name: Download Artifacts
       uses: actions/download-artifact@v4.3.0
       with:
-        name: webrtc_java_${{ inputs.platform-name }}
+        name: webrtc_java_${{ matrix.platform.name }}
         path: C:/Users/allartifacts/
 
     - name: List Artifacts
