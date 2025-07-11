@@ -44,7 +44,7 @@ jobs:
     #   run: |
     #     mkdir -p C:/Users/artifacts && touch C:/Users/artifacts/test_artifact.txt
     - name: Archive Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: maven-web-application
         path: C:/Users/artifacts/test_artifact.txt
