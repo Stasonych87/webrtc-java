@@ -83,7 +83,7 @@ runs:
     - name: Archive Artifact 1
       uses: actions/upload-artifact@v4
       with:
-        name: webrtc_jni_windows
+        name: webrtc_jni_${{ inputs.platform-name }}
         path: ./webrtc-jni/target/*.jar
         overwrite: true
 
