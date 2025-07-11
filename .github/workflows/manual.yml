@@ -39,14 +39,15 @@ jobs:
       run: echo "Hello ${{ inputs.name }}"
     - name: Create Artifacts Dir
       run: |
-        mkdir -p C:/Users/artifacts && touch C:/Users/artifacts/test_artifact.txt && touch C:/Users/artifacts/test_artifact2.txt
+        mkdir -p C:/Users/artifacts && touch C:/Users/artifacts/test_artifact.txt && 
+        mkdir p C:/Users/artifacts2 && touch C:/Users/artifacts2/test_artifact2.txt
     # - name: Create Artifacts Dir
     #   run: |
     #     mkdir -p C:/Users/artifacts && touch C:/Users/artifacts/test_artifact.txt
     - name: Archive Artifact
       uses: actions/upload-artifact@v4
       with:
-        path: C:/Users/artifacts/*.txt
+        path: C:/Users/artifacts/*.txt && C:/Users/artifacts2/*.txt
     - name: Create Artifacts Dir
       run: |
         mkdir -p C:/Users/allartifacts
