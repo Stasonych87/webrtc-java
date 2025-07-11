@@ -21,30 +21,30 @@ env:
   WEBRTC_INSTALL_FOLDER: webrtc/build
 
 jobs:
-  build-windows:
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - name: windows_x86_64
-            runs-on: windows-2022
-        java: [17]
-    runs-on: ${{ matrix.platform.runs-on }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - id: prepare
-        name: Prepare build
-        uses: ./.github/actions/prepare-windows
-
-      - id: maven-build
-        name: Maven build
-        uses: ./.github/actions/build
-        with:
-          java-version: ${{ matrix.java }}
-          platform-name: ${{ matrix.platform.name }}
-          gitlab-token: ${{ secrets.GITLAB_TOKEN }}
+#  build-windows:
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        platform:
+#          - name: windows_x86_64
+#            runs-on: windows-2022
+#        java: [17]
+#    runs-on: ${{ matrix.platform.runs-on }}
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#
+#      - id: prepare
+#        name: Prepare build
+#        uses: ./.github/actions/prepare-windows
+#
+#      - id: maven-build
+#        name: Maven build
+#        uses: ./.github/actions/build
+#        with:
+#          java-version: ${{ matrix.java }}
+#          platform-name: ${{ matrix.platform.name }}
+#          gitlab-token: ${{ secrets.GITLAB_TOKEN }}
 
   build-linux:
     strategy:
