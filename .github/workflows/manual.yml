@@ -37,16 +37,27 @@ jobs:
     # Runs a single command using the runners shell
     - name: Send greeting
       run: echo "Hello ${{ inputs.name }}"
-    - name: Create Artufacts Dir
+    - name: Create Artifacts Dir
       run: |
         mkdir -p C:/Users/artifacts && touch C:/Users/artifacts/test_artifact.txt
-    - name: Download Artifacts
-      uses: actions/download-artifact@v2
+    # - name: Create Artifacts Dir
+    #   run: |
+    #     mkdir -p C:/Users/artifacts && touch C:/Users/artifacts/test_artifact.txt
+    - name: Archive Artifact
+      uses: actions/upload-artifact@v3
       with:
-        path: C:/Users/artifacts/*
+        name: maven-web-application
+        path: C:/Users/artifacts/test_artifact.txt
+    - name: Create Artifacts Dir
+      run: |
+        mkdir -p C:/Users/allartifacts
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4.3.0
+      with:
+        path: C:/Users/allartifacts/
 
     - name: List Artifacts
-      run: dir C:/Users/artifacts
+      run: dir C:/Users/allartifacts
 
     # - name: Get Token    
     #   run: |
