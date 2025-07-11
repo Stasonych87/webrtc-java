@@ -80,8 +80,21 @@ runs:
       run: ls ./webrtc/target && ls ./webrtc-jni/target
       shell: bash
 
+    - name: Archive Artifact 1
+      uses: actions/upload-artifact@v4
+      with:
+        path: ./webrtc-jni/target/*.jar
+
+    - name: Archive Artifact 1
+      uses: actions/upload-artifact@v4
+      with:
+        path: ./webrtc/target/*.jar
+
+#    - name: Create Artifacts Dir
+#      run: mkdir artifacts && cp ./webrtc-jni/target/*.jar artifacts && cp ./webrtc/target/*.jar artifacts
+#      shell: bash
     - name: Create Artifacts Dir
-      run: mkdir artifacts && cp ./webrtc-jni/target/*.jar artifacts && cp ./webrtc/target/*.jar artifacts
+      run: mkdir artifacts
       shell: bash
 
     - name: Download Artifacts
