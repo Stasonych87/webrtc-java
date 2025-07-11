@@ -27,8 +27,10 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - name: windows_x86_64
-            runs-on: windows-2022
+          # - name: windows_x86_64
+          #   runs-on: windows-2022
+          - name: macos_x86-64
+            runs-on: macos-13
         java: [17]
     runs-on: ${{ matrix.platform.runs-on }}
 
@@ -61,7 +63,7 @@ jobs:
         path: C:/Users/allartifacts/
 
     - name: List Artifacts
-      run: dir C:/Users/allartifacts
+      run: ls C:/Users/allartifacts
 
     # - name: Get Token    
     #   run: |
