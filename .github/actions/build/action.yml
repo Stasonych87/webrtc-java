@@ -114,7 +114,7 @@ runs:
         path: artifacts
 
     - name: List Artifacts
-      run: dir artifacts
+      run: ls artifacts
       shell: bash
 
 #    - name: Deploy
