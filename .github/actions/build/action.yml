@@ -85,12 +85,14 @@ runs:
       with:
         name: webrtc_jni_windows
         path: ./webrtc-jni/target/*.jar
+        overwrite: true
 
     - name: Archive Artifact 1
       uses: actions/upload-artifact@v4
       with:
         name: webrtc_java
         path: ./webrtc/target/*.jar
+        overwrite: true
 
 #    - name: Create Artifacts Dir
 #      run: mkdir artifacts && cp ./webrtc-jni/target/*.jar artifacts && cp ./webrtc/target/*.jar artifacts
@@ -102,7 +104,7 @@ runs:
     - name: Download Artifacts
       uses: actions/download-artifact@v4
       with:
-        name: webrtc_jni_windows
+        name: webrtc_jni_${{ inputs.platform-name }}
         path: artifacts
 
     - name: Download Artifacts
