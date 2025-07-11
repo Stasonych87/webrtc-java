@@ -43,7 +43,7 @@ jobs:
     - name: Download Artifacts
       uses: actions/download-artifact@v4
       with:
-        path: C:/Users/artifacts
+        path: C:/Users/artifacts/*
 
     - name: List Artifacts
       run: dir C:/Users/artifacts
