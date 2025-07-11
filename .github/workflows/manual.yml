@@ -39,7 +39,7 @@ jobs:
       run: echo "Hello ${{ inputs.name }}"
     - name: Create Artufacts Dir
       run: |
-        mkdir -p C:/Users/artifacts
+        mkdir -p C:/Users/artifacts && touch C:/Users/artifacts/test_artifact.txt
     - name: Download Artifacts
       uses: actions/download-artifact@v4
       with:
