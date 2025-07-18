@@ -7,7 +7,7 @@
 				<httpHeaders>
 					<property>
 						<name>Private-Token</name>
-						<value>glpat-nzznYWHAw7x7WRa2cas_</value>
+						<value>${env.PRIVATE_TOKEN}</value>
 					</property>
 				</httpHeaders>
 			</configuration>
