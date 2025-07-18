@@ -30,24 +30,22 @@
 
 namespace jni
 {
-	class VideoTrackDeviceSource : public webrtc::VideoTrackSource, public rtc::VideoSinkInterface<webrtc::VideoFrame>
+	class VideoTrackDeviceSource : public webrtc::VideoTrackSource, public webrtc::VideoSinkInterface<webrtc::VideoFrame>, public VideoTrackDeviceSourceBase
 	{
 		public:
 			VideoTrackDeviceSource();
 			~VideoTrackDeviceSource();
 
-			void setVideoDevice(const avdev::VideoDevicePtr & device);
-			void setVideoCaptureCapability(const webrtc::VideoCaptureCapability & capability);
-
-			void start();
-			void stop();
+            // VideoTrackDeviceSourceBase implementation.
+            void start() override;
+            void stop() override;
 
 			// VideoSourceInterface implementation.
-			void AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame> * sink, const rtc::VideoSinkWants & wants) override;
-			void RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame> * sink) override;
+			void AddOrUpdateSink(webrtc::VideoSinkInterface<webrtc::VideoFrame> * sink, const webrtc::VideoSinkWants & wants) override;
+			void RemoveSink(webrtc::VideoSinkInterface<webrtc::VideoFrame> * sink) override;
 
 			// VideoTrackSource implementation.
-			rtc::VideoSourceInterface<webrtc::VideoFrame> * source() override;
+			webrtc::VideoSourceInterface<webrtc::VideoFrame> * source() override;
 
 			// VideoSinkInterface implementation.
 			void OnFrame(const webrtc::VideoFrame & frame) override;
@@ -58,12 +56,9 @@ namespace jni
 			void destroy();
 
 		private:
-			avdev::VideoDevicePtr device;
-			webrtc::VideoCaptureCapability capability;
-
-			rtc::scoped_refptr<webrtc::VideoCaptureModule> captureModule;
-			rtc::VideoBroadcaster broadcaster;
-			cricket::VideoAdapter videoAdapter;
+			webrtc::scoped_refptr<webrtc::VideoCaptureModule> captureModule;
+			webrtc::VideoBroadcaster broadcaster;
+			webrtc::VideoAdapter videoAdapter;
 	};
 }
 

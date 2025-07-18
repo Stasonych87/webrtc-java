@@ -24,7 +24,25 @@
 JNIEXPORT jobject JNICALL Java_dev_onvoid_webrtc_media_video_NativeI420Buffer_allocate
 (JNIEnv * env, jclass caller, jint width, jint height)
 {
-	rtc::scoped_refptr<webrtc::I420BufferInterface> i420Buffer = webrtc::I420Buffer::Create(width, height);
+	webrtc::scoped_refptr<webrtc::I420BufferInterface> i420Buffer = webrtc::I420Buffer::Create(width, height);
+
+	jni::JavaLocalRef<jobject> jBuffer = jni::I420Buffer::toJava(env, i420Buffer);
+
+	i420Buffer->AddRef();
+
+	return jBuffer.release();
+}
+
+JNIEXPORT jobject JNICALL Java_dev_onvoid_webrtc_media_video_NativeI420Buffer_copy
+(JNIEnv* env, jclass caller, jint width, jint height, jobject jSrcY, jint srcStrideY,
+	jobject jSrcU, jint srcStrideU, jobject jSrcV, jint srcStrideV)
+{
+	const uint8_t * src_y = static_cast<uint8_t*>(env->GetDirectBufferAddress(jSrcY));
+	const uint8_t * src_u = static_cast<uint8_t*>(env->GetDirectBufferAddress(jSrcU));
+	const uint8_t * src_v = static_cast<uint8_t*>(env->GetDirectBufferAddress(jSrcV));
+
+	webrtc::scoped_refptr<webrtc::I420BufferInterface> i420Buffer = webrtc::I420Buffer::Copy(width, height,
+		src_y, srcStrideY, src_u, srcStrideU, src_v, srcStrideV);
 
 	jni::JavaLocalRef<jobject> jBuffer = jni::I420Buffer::toJava(env, i420Buffer);
 

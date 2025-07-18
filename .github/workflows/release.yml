@@ -1,9 +1,6 @@
 name: Release
 
 on:
-  create:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       developmentVersion:
@@ -12,13 +9,19 @@ on:
         default: "X.Y.Z-SNAPSHOT"
 
 env:
-  WEBRTC_CACHE_BRANCH: 6998
+  WEBRTC_CACHE_BRANCH: 7204
   WEBRTC_CHECKOUT_FOLDER: webrtc
   WEBRTC_INSTALL_FOLDER: webrtc/build
 
 jobs:
   prepare-release:
-    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: linux_x86-64
+            runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -153,7 +156,7 @@ jobs:
       matrix:
         platform:
           - name: macos_x86-64
-            runs-on: macos-13
+            runs-on: macos-14
           - name: macos_arm64
             runs-on: macos-14
         java: [17]
@@ -176,9 +179,22 @@ jobs:
         name: Prepare release build
         uses: ./.github/actions/prepare-macos
 
-      - id: maven-build
-        name: Maven build
+      - id: maven-build-arm64
+        name: Maven build - Apple Silicon
+        if: matrix.platform.name == 'macos_arm64'
         uses: ./.github/actions/release
+        with:
+          java-version: ${{ matrix.java }}
+          platform-name: ${{ matrix.platform.name }}
+          maven-username: ${{ secrets.MAVEN_USERNAME }}
+          maven-password: ${{ secrets.MAVEN_TOKEN }}
+          maven-gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          maven-gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+      - id: maven-build-x86_64
+        name: Maven build - Intel
+        if: matrix.platform.name == 'macos_x86-64'
+        uses: ./.github/actions/release-macos-x86_64
         with:
           java-version: ${{ matrix.java }}
           platform-name: ${{ matrix.platform.name }}

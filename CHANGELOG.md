@@ -1,8 +1,49 @@
-## [0.8.0]() (2023-08-10)
+## [0.12.0]() (2025-07-18)
 
-### API changes
+### Bug Fixes
+- Maven release action for macOS platforms
 
-- Set native branch to 5615 (Milestone 112)
+### Feature
+- Add the missing macOS camera capture functionality (#180)
+- Add a copy method for NativeI420Buffer and VideoFrame
+
+### Build
+- Update package installation commands and enhance sysroot configuration for Linux (#178)
+
+### Refactoring
+- Updated the native interface to m138 (#179)
+
+## [0.11.0]() (2025-06-02)
+### Bug Fixes
+- Screen/Window capturer memory leak.
+
+### Build
+- Updated project to a more recent stable WebRTC branch, m134 (6998).
+- Link against the WebRTC custom libc++ and libc++abi on Linux, and against libc++ on Windows.
+- Added support for Linux ARM and ARM64 builds.
+- Build with Clang on all platforms.
+
+## [0.10.0]() (2025-03-18)
+### Bug Fixes
+- Fixed crashes under Linux caused by unlinked libraries
+- Fixed crashes caused by video frame conversion
+- Added missing _libX_ libraries to be installed in GH actions
+
+## [0.9.0]() (2025-01-02)
+
+### Bug Fixes
+- Fixed NPE in MediaDevices when no audio device is connected
+- Fixed crashs with jdk version > 17
+- Fixed Apple Silicon builds
+- Fixed build and release workflow
+
+### Feature
+- Added screen inhibition
+
+### Enhancements
+- Added Linux ARM architectures for cross compilation
+
+## [0.8.0]() (2023-10-14)
 
 ### Enhancement
 

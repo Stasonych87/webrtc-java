@@ -17,35 +17,25 @@
 #ifndef JNI_WEBRTC_MEDIA_VIDEO_CAPTURE_H_
 #define JNI_WEBRTC_MEDIA_VIDEO_CAPTURE_H_
 
-#include "media/video/VideoDevice.h"
+#include "media/video/VideoCaptureBase.h"
 
-#include "api/create_peerconnection_factory.h"
-#include "api/video/video_sink_interface.h"
-#include "media/base/video_adapter.h"
 #include "modules/video_capture/video_capture.h"
 #include "modules/video_capture/video_capture_defines.h"
 
 namespace jni
 {
-	class VideoCapture
+	class VideoCapture : public VideoCaptureBase
 	{
 		public:
 			VideoCapture();
 			~VideoCapture();
 
-			void setDevice(const avdev::DevicePtr & device);
-			void setVideoCaptureCapability(const webrtc::VideoCaptureCapability & capability);
-			void setVideoSink(std::unique_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
-			void start();
-			void stop();
-			void destroy();
+            void start() override;
+			void stop() override;
+			void destroy() override;
 
 		private:
-			avdev::DevicePtr device;
-			webrtc::VideoCaptureCapability capability;
-			std::unique_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink;
-
-			rtc::scoped_refptr<webrtc::VideoCaptureModule> captureModule;
+			webrtc::scoped_refptr<webrtc::VideoCaptureModule> captureModule;
 	};
 }
 

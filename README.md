@@ -12,22 +12,21 @@
 <dependency>
 	<groupId>dev.onvoid.webrtc</groupId>
 	<artifactId>webrtc-java</artifactId>
-	<version>0.11.0</version>
+	<version>0.12.0</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```groovy
-implementation "dev.onvoid.webrtc:webrtc-java:0.10.0"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "windows-x86_64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "macos-x86_64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "macos-aarch64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "linux-x86_64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "linux-aarch64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.10.0", classifier: "linux-aarch32"
+implementation "dev.onvoid.webrtc:webrtc-java:0.12.0"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "windows-x86_64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "macos-x86_64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "macos-aarch64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "linux-x86_64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "linux-aarch64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "linux-aarch32"
 ```
--->
 
 
 ### Подерживаемые платформы
@@ -98,7 +97,7 @@ mvn install
 
 | Parameter          | Description                                                                                                                                                                | Default Value               |
 | ------------------ |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|
-| webrtc.branch      | Чекаут ветки WebRTC, которую будем собирать.                                                                                                                               | branch-heads/5615           |
+| webrtc.branch      | Чекаут ветки WebRTC, которую будем собирать.                                                                                                                               | branch-heads/7204            |
 | webrtc.src.dir     | Абсолютный путь к каталогу в который будет выгружено дерево исходников WebRTC.                                                                                             | /\<user_home\>/webrtc       |
 | webrtc.install.dir | Путь установки для скомпилированной библиотеки WebRTC. Также используется для привязки к предварительно скомпилированной библиотеке WebRTC для сокращения времени сборки.  | /\<user_home\>/webrtc/build |
 

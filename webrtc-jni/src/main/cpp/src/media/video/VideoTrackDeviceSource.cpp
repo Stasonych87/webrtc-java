@@ -24,26 +24,14 @@ namespace jni
 {
 	VideoTrackDeviceSource::VideoTrackDeviceSource() :
 		VideoTrackSource(/*remote=*/false),
+		VideoTrackDeviceSourceBase(),
 		captureModule(nullptr)
 	{
-		capability.width = static_cast<int32_t>(1280);
-		capability.height = static_cast<int32_t>(720);
-		capability.maxFPS = static_cast<int32_t>(30);
 	}
 
 	VideoTrackDeviceSource::~VideoTrackDeviceSource()
 	{
 		destroy();
-	}
-
-	void VideoTrackDeviceSource::setVideoDevice(const avdev::VideoDevicePtr & device)
-	{
-		this->device = device;
-	}
-
-	void VideoTrackDeviceSource::setVideoCaptureCapability(const webrtc::VideoCaptureCapability & capability)
-	{
-		this->capability = capability;
 	}
 
 	void VideoTrackDeviceSource::start()
@@ -152,14 +140,14 @@ namespace jni
 		captureModule = nullptr;
 	}
 
-	void VideoTrackDeviceSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame> * sink, const rtc::VideoSinkWants & wants)
+	void VideoTrackDeviceSource::AddOrUpdateSink(webrtc::VideoSinkInterface<webrtc::VideoFrame> * sink, const webrtc::VideoSinkWants & wants)
 	{
 		broadcaster.AddOrUpdateSink(sink, wants);
 
 		updateVideoAdapter();
 	}
 
-	void VideoTrackDeviceSource::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame> * sink)
+	void VideoTrackDeviceSource::RemoveSink(webrtc::VideoSinkInterface<webrtc::VideoFrame> * sink)
 	{
 		broadcaster.RemoveSink(sink);
 
@@ -177,7 +165,7 @@ namespace jni
 
 	void VideoTrackDeviceSource::updateVideoAdapter()
 	{
-		rtc::VideoSinkWants wants = broadcaster.wants();
+		webrtc::VideoSinkWants wants = broadcaster.wants();
 
 		videoAdapter.OnOutputFormatRequest(std::make_pair(capability.width, capability.height), wants.max_pixel_count, wants.max_framerate_fps);
 	}
@@ -197,7 +185,7 @@ namespace jni
 
 		if (outHeight != frame.height() || outWidth != frame.width()) {
 			// Video adapter has requested a down-scale. Allocate a new buffer and return scaled version.
-			rtc::scoped_refptr<webrtc::I420Buffer> scaled_buffer = webrtc::I420Buffer::Create(outWidth, outHeight);
+			webrtc::scoped_refptr<webrtc::I420Buffer> scaled_buffer = webrtc::I420Buffer::Create(outWidth, outHeight);
 
 			scaled_buffer->ScaleFrom(*frame.video_frame_buffer()->ToI420());
 			
@@ -214,7 +202,7 @@ namespace jni
 		}
 	}
 
-	rtc::VideoSourceInterface<webrtc::VideoFrame> * VideoTrackDeviceSource::source()
+	webrtc::VideoSourceInterface<webrtc::VideoFrame> * VideoTrackDeviceSource::source()
 	{
 		return this;
 	}
