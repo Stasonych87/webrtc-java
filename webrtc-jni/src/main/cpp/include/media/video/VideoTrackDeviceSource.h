@@ -26,6 +26,7 @@
 #include "modules/video_capture/video_capture.h"
 #include "modules/video_capture/video_capture_defines.h"
 
+#include "media/video/VideoTrackDeviceSourceBase.h"
 #include "media/video/VideoDevice.h"
 
 namespace jni
