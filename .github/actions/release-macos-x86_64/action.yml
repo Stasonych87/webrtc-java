@@ -65,10 +65,48 @@ runs:
       run: arch -x86_64 mvn -B jar:jar surefire:test -Pmacos-cross-x86_64
       shell: bash
 
-    - name: Deploy
-      env:
-        MAVEN_USERNAME: ${{ inputs.maven-username }}
-        MAVEN_TOKEN: ${{ inputs.maven-password }}
-        MAVEN_GPG_PASSPHRASE: ${{ inputs.maven-gpg-passphrase }}
-      run: arch -x86_64 mvn deploy -DskipTests -Pmacos-cross-x86_64 -Prelease
+    - name: Show current Dir
+      run: ls ./webrtc/target && ls ./webrtc-jni/target
       shell: bash
+
+    - name: Archive Artifact 1
+      uses: actions/upload-artifact@v4
+      with:
+        name: webrtc_jni_${{ inputs.platform-name }}
+        path: ./webrtc-jni/target/*.jar
+        overwrite: true
+
+    - name: Archive Artifact 1
+      uses: actions/upload-artifact@v4
+      with:
+        name: webrtc_java
+        path: ./webrtc/target/*.jar
+        overwrite: true
+
+    - name: Create Artifacts Dir
+      run: mkdir artifacts
+      shell: bash
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: webrtc_jni_${{ inputs.platform-name }}
+        path: artifacts
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: webrtc_java
+        path: artifacts
+
+    - name: List Artifacts
+      run: ls artifacts
+      shell: bash
+
+#    - name: Deploy
+#      env:
+#        MAVEN_USERNAME: ${{ inputs.maven-username }}
+#        MAVEN_TOKEN: ${{ inputs.maven-password }}
+#        MAVEN_GPG_PASSPHRASE: ${{ inputs.maven-gpg-passphrase }}
+#      run: arch -x86_64 mvn deploy -DskipTests -Pmacos-cross-x86_64 -Prelease
+#      shell: bash
