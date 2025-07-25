@@ -20,10 +20,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.concurrent.CountDownLatch;
 
-import dev.onvoid.webrtc.PeerConnectionFactory;
-import dev.onvoid.webrtc.logging.Logging.Severity;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModule;
 import dev.onvoid.webrtc.media.audio.AudioLayer;
+import dev.onvoid.webrtc.PeerConnectionFactory;
 
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +33,7 @@ class LoggingTests {
 		CountDownLatch latch = new CountDownLatch(3);
 
 		LogSink sink = (severity, message) -> {
-			assertTrue(severity.ordinal() > Severity.VERBOSE.ordinal());
+			assertTrue(severity.ordinal() > Logging.Severity.VERBOSE.ordinal());
 			assertNotNull(message);
 
 			latch.countDown();

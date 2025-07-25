@@ -24,7 +24,9 @@ import dev.onvoid.webrtc.media.MediaType;
 import dev.onvoid.webrtc.media.audio.*;
 import dev.onvoid.webrtc.media.video.VideoDeviceSource;
 import dev.onvoid.webrtc.media.video.VideoTrack;
+import dev.onvoid.webrtc.media.audio.*;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class PeerConnectionFactoryTests extends TestBase {
@@ -82,7 +84,7 @@ class PeerConnectionFactoryTests extends TestBase {
 		AudioTrackSource audioSource = factory.createAudioSource(audioOptions);
 
 		assertNotNull(audioSource);
-		assertEquals(MediaSource.State.LIVE, audioSource.getState());
+		Assertions.assertEquals(MediaSource.State.LIVE, audioSource.getState());
 	}
 
 	@Test
@@ -103,10 +105,10 @@ class PeerConnectionFactoryTests extends TestBase {
 		AudioTrack audioTrack = factory.createAudioTrack("audioTrack", audioSource);
 
 		assertNotNull(audioTrack);
-		assertEquals("audio", audioTrack.getKind());
-		assertEquals("audioTrack", audioTrack.getId());
-		assertEquals(MediaStreamTrackState.LIVE, audioTrack.getState());
-		assertTrue(audioTrack.isEnabled());
+		Assertions.assertEquals("audio", audioTrack.getKind());
+		Assertions.assertEquals("audioTrack", audioTrack.getId());
+		Assertions.assertEquals(MediaStreamTrackState.LIVE, audioTrack.getState());
+		Assertions.assertTrue(audioTrack.isEnabled());
 	}
 
 	@Test
@@ -126,10 +128,10 @@ class PeerConnectionFactoryTests extends TestBase {
 		VideoTrack videoTrack = factory.createVideoTrack("videoTrack", videoSource);
 
 		assertNotNull(videoTrack);
-		assertEquals("video", videoTrack.getKind());
-		assertEquals("videoTrack", videoTrack.getId());
-		assertEquals(MediaStreamTrackState.LIVE, videoTrack.getState());
-		assertTrue(videoTrack.isEnabled());
+		Assertions.assertEquals("video", videoTrack.getKind());
+		Assertions.assertEquals("videoTrack", videoTrack.getId());
+		Assertions.assertEquals(MediaStreamTrackState.LIVE, videoTrack.getState());
+		Assertions.assertTrue(videoTrack.isEnabled());
 	}
 
 	@Test

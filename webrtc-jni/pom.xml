@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>dev.onvoid.webrtc</groupId>
 		<artifactId>webrtc-java-parent</artifactId>
-		<version>0.12.0-SNAPSHOT</version>
+		<version>0.12.1</version>
 	</parent>
 
 	<artifactId>webrtc-java-jni</artifactId>
@@ -63,7 +63,7 @@
 							<file>${project.build.directory}/webrtc-java-${project.version}-${platform.classifier}.jar</file>
 							<classifier>${platform.classifier}</classifier>
 							<groupId>${project.groupId}</groupId>
-							<artifactId>webrtc-java</artifactId>
+							<artifactId>connect-webrtc-java</artifactId>
 							<version>${project.version}</version>
 							<packaging>jar</packaging>
 							<generatePom>false</generatePom>

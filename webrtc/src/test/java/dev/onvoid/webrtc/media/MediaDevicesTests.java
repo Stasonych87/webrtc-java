@@ -16,14 +16,6 @@
 
 package dev.onvoid.webrtc.media;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import dev.onvoid.webrtc.media.audio.AudioDevice;
-import dev.onvoid.webrtc.media.video.VideoCaptureCapability;
-import dev.onvoid.webrtc.media.video.VideoDevice;
-
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 
 class MediaDevicesTests {

@@ -19,13 +19,13 @@
 ### Gradle
 
 ```groovy
-implementation "dev.onvoid.webrtc:webrtc-java:0.12.0"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "windows-x86_64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "macos-x86_64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "macos-aarch64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "linux-x86_64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "linux-aarch64"
-implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.0", classifier: "linux-aarch32"
+implementation "dev.onvoid.webrtc:webrtc-java:0.12.1"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.1", classifier: "windows-x86_64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.1", classifier: "macos-x86_64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.1", classifier: "macos-aarch64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.1", classifier: "linux-x86_64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.1", classifier: "linux-aarch64"
+implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: "0.12.1", classifier: "linux-aarch32"
 ```
 
 

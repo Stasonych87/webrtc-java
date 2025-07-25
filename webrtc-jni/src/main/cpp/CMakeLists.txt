@@ -62,18 +62,18 @@ file(GLOB SOURCES_PLATFORM "src/platform/${SOURCE_TARGET}/*.cpp")
 file(GLOB SOURCES_RTC "src/rtc/*.cpp")
 
 list(APPEND SOURCES
-	${SOURCES_ROOT}
-	${SOURCES_API}
-	${SOURCES_API_AUDIO}
-	${SOURCES_MEDIA}
-	${SOURCES_MEDIA_AUDIO}
-	${SOURCES_MEDIA_AUDIO_OS}
-	${SOURCES_MEDIA_VIDEO}
-	${SOURCES_MEDIA_VIDEO_DESKTOP}
-	${SOURCES_MEDIA_VIDEO_DESKTOP_OS}
-	${SOURCES_MEDIA_VIDEO_OS}
-	${SOURCES_PLATFORM}
-	${SOURCES_RTC}
+    ${SOURCES_ROOT}
+    ${SOURCES_API}
+    ${SOURCES_API_AUDIO}
+    ${SOURCES_MEDIA}
+    ${SOURCES_MEDIA_AUDIO}
+    ${SOURCES_MEDIA_AUDIO_OS}
+    ${SOURCES_MEDIA_VIDEO}
+    ${SOURCES_MEDIA_VIDEO_DESKTOP}
+    ${SOURCES_MEDIA_VIDEO_DESKTOP_OS}
+    ${SOURCES_MEDIA_VIDEO_OS}
+    ${SOURCES_PLATFORM}
+    ${SOURCES_RTC}
 )
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
@@ -100,7 +100,8 @@ target_link_libraries(${PROJECT_NAME} webrtc)
 
 if(APPLE)
     set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS "-x objective-c++")
-    target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreAudio" "-framework IOKit" "-framework CoreVideo" "-framework VideoToolbox")
+    target_link_options(${PROJECT_NAME} PRIVATE "-ObjC")
+    target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreAudio" "-framework IOKit" "-framework CoreVideo" "-framework VideoToolbox" "-framework QuartzCore")
 elseif(LINUX)
     if(NOT TARGET_CPU MATCHES "^arm")
         set(CXX_LIBS "-static-libgcc -stdlib=libc++ -lc++ -lc++abi")

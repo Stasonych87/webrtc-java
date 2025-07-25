@@ -19,8 +19,6 @@ package dev.onvoid.webrtc.media.audio;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import dev.onvoid.webrtc.media.audio.AudioProcessingConfig.NoiseSuppression;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +49,7 @@ class AudioProcessingTest {
 		config.highPassFilter.enabled = true;
 
 		config.noiseSuppression.enabled = true;
-		config.noiseSuppression.level = NoiseSuppression.Level.HIGH;
+		config.noiseSuppression.level = AudioProcessingConfig.NoiseSuppression.Level.HIGH;
 
 		audioProcessing.applyConfig(config);
 	}

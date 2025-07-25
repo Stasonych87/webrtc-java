@@ -106,39 +106,6 @@ function(sysroot_install)
     print("${COMMAND_ERROR}")
 endfunction()
 
-function(sysroot_link)
-	message(STATUS "Retrieving libm.so from sysroot")
-
-    set(SYSROOT_ARCH "amd64")
-
-    if(${TARGET_CPU} STREQUAL "x64")
-        set(SYSROOT_ARCH "amd64")
-    elseif(${TARGET_CPU} STREQUAL "arm")
-        set(SYSROOT_ARCH "armhf")
-    elseif(${TARGET_CPU} STREQUAL "arm64")
-        set(SYSROOT_ARCH "arm64")
-    endif()
-
-    if(EXISTS "${WEBRTC_INSTALL_DIR}/lib/${WEBRTC_LIB}")
-        set(SYSROOT_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
-    else()
-        set(SYSROOT_PATH "${WEBRTC_SRC_DIR}/src/build")
-    endif()
-
-	execute_process(
-		COMMAND find "${SYSROOT_PATH}/linux/debian_bullseye_${SYSROOT_ARCH}-sysroot" -iname libm-*.so
-		WORKING_DIRECTORY "${WEBRTC_SRC_DIR}"
-		OUTPUT_VARIABLE COMMAND_OUTPUT
-		ERROR_VARIABLE COMMAND_ERROR
-	)
-
-	string(STRIP ${COMMAND_OUTPUT} LIBM_PATH)
-
-	message(STATUS "Linking libm.so from: ${LIBM_PATH}")
-
-	target_link_libraries(${PROJECT_NAME} "${LIBM_PATH}")
-endfunction()
-
 file(TO_CMAKE_PATH "${WEBRTC_SRC_DIR}" WEBRTC_SRC_DIR)
 
 set(WEBRTC_DIR ${WEBRTC_SRC_DIR})
@@ -197,7 +164,7 @@ if(APPLE)
             ${TARGET_INC_DIR}/sdk/objc
             ${TARGET_INC_DIR}/sdk/objc/base
     )
-    target_compile_definitions(${PROJECT_NAME} PUBLIC WEBRTC_MAC WEBRTC_POSIX)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC WEBRTC_MAC WEBRTC_POSIX WEBRTC_USE_H264)
     target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreAudio" "-framework CoreVideo" "-framework ScreenCaptureKit" "-framework AudioToolbox" "-framework IOSurface" "-framework ApplicationServices" "-framework AppKit")
 elseif(LINUX)
     # Find DBus
@@ -349,7 +316,7 @@ execute_command(
 message(STATUS "WebRTC: compile")
 if(APPLE)
     execute_command(
-        COMMAND ninja -C "${WEBRTC_BUILD}" :default sdk:native_api sdk:videocapture_objc
+        COMMAND ninja -C "${WEBRTC_BUILD}" :default api/audio_codecs:builtin_audio_decoder_factory api/task_queue:default_task_queue_factory sdk:native_api sdk:default_codec_factory_objc pc:peer_connection sdk:videocapture_objc
         WORKING_DIRECTORY "${WEBRTC_SRC}"
     )
 

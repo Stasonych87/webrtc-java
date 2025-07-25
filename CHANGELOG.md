@@ -46,6 +46,9 @@
 ## [0.8.0]() (2023-10-14)
 
 ### Enhancement
+- Link libm from sysroot to increase GLIBC (<= 2.18) compatibility #108
+- Initialized configs to be used with GraalVM
+- Added setFocusSelectedSource to DesktopCapturer and capture with DesktopAndCursorComposer
 
 - Актуализация ветки WebRTC до m137
 - Симбиоз правок от форка https://github.com/kalgecin/webrtc-java и https://github.com/devopvoid/webrtc-java/compare/feature/m103
