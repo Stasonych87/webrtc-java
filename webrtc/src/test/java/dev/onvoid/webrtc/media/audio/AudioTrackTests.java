@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import dev.onvoid.webrtc.TestBase;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,11 +46,11 @@ class AudioTrackTests extends TestBase {
 	void disableEnableTrack() {
 		audioTrack.setEnabled(false);
 
-		Assertions.assertFalse(audioTrack.isEnabled());
+		assertFalse(audioTrack.isEnabled());
 
 		audioTrack.setEnabled(true);
 
-		Assertions.assertTrue(audioTrack.isEnabled());
+		assertTrue(audioTrack.isEnabled());
 	}
 
 	@Test

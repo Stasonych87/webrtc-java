@@ -1,5 +1,19 @@
-## [0.12.0]() (2025-07-18)
+## [0.13.0]() (2025-07-25)
+### Bug Fixes
+- macOS screen capturing only the first frame
+- Crash in `MediaDevices` by validating COM initialization in audio device management
 
+### Feature
+- Enable H.264 support for Linux, macOS and Windows
+- Added RTCDtmfSender implementation for sending DTMF tones
+
+### Documentation
+- Comprehensive guide and examples are now available @ https://jrtc.dev
+
+### Refactoring
+- Moved `master` branch to `main`
+
+## [0.12.0]() (2025-07-18)
 ### Bug Fixes
 - Maven release action for macOS platforms
 

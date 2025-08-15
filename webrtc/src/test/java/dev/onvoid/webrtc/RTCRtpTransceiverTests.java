@@ -2,8 +2,8 @@ package dev.onvoid.webrtc;
 
 import dev.onvoid.webrtc.media.MediaType;
 import dev.onvoid.webrtc.media.audio.AudioOptions;
-import dev.onvoid.webrtc.media.audio.AudioTrack;
 import dev.onvoid.webrtc.media.audio.AudioTrackSource;
+import dev.onvoid.webrtc.media.audio.AudioTrack;
 import dev.onvoid.webrtc.media.video.VideoDesktopSource;
 import dev.onvoid.webrtc.media.video.VideoTrack;
 
@@ -55,7 +55,7 @@ class RTCRtpTransceiverTests extends TestBase {
 				new RTCRtpTransceiverInit());
 
 		audioTransceiver.setCodecPreferences(audioPreferences);
-//		videoTransceiver.setCodecPreferences(videoPreferences);
+		videoTransceiver.setCodecPreferences(videoPreferences);
 	}
 
 }
