@@ -18,6 +18,7 @@
 #include "JavaEnums.h"
 #include "JavaHashMap.h"
 #include "JavaObject.h"
+#include "JavaPrimitive.h"
 #include "JavaString.h"
 #include "JavaUtils.h"
 #include "JNI_WebRTC.h"
