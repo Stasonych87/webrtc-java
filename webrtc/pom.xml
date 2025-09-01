@@ -8,7 +8,7 @@
 		<version>0.13.1</version>
 	</parent>
 
-	<artifactId>connect-webrtc-java</artifactId>
+	<artifactId>webrtc-java</artifactId>
 
 	<name>webrtc-java</name>
 

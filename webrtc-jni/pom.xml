@@ -63,7 +63,7 @@
 							<file>${project.build.directory}/webrtc-java-${project.version}-${platform.classifier}.jar</file>
 							<classifier>${platform.classifier}</classifier>
 							<groupId>${project.groupId}</groupId>
-							<artifactId>connect-webrtc-java</artifactId>
+							<artifactId>webrtc-java</artifactId>
 							<version>${project.version}</version>
 							<packaging>jar</packaging>
 							<generatePom>false</generatePom>
