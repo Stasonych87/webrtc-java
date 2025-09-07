@@ -42,14 +42,14 @@ jobs:
           pulseaudio --start
 
       - name: Set up WebRTC cache
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         with:
           path: ~/${{ env.WEBRTC_INSTALL_FOLDER }}
           key: webrtc-${{ env.WEBRTC_CACHE_BRANCH }}-${{ runner.os }}-${{ hashFiles('webrtc-jni/pom.xml') }}
           restore-keys: webrtc-${{ env.WEBRTC_CACHE_BRANCH }}-${{ runner.os }}-
 
       - name: Set up Maven cache
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
