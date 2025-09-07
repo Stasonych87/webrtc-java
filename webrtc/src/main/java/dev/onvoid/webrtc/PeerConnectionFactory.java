@@ -142,7 +142,12 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 * @return The created peer connection.
 	 */
 	public native RTCPeerConnection createPeerConnection(
-			RTCConfiguration config, PeerConnectionObserver observer);
+			RTCConfiguration config, PeerConnectionObserver observer, boolean disableEncryption);
+
+	public RTCPeerConnection createPeerConnection(
+			RTCConfiguration config, PeerConnectionObserver observer) {
+		return createPeerConnection(config, observer, false);
+    };
 
 	/**
 	 * Returns the capabilities of the system for receiving media of the given

@@ -36,23 +36,23 @@
 		<url>https://github.com/devopvoid/webrtc-java/issues</url>
 	</issueManagement>
 
-	<scm>
-		<connection>scm:git:git://github.com/devopvoid/webrtc-java.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/devopvoid/webrtc-java.git</developerConnection>
-		<url>https://github.com/devopvoid/webrtc-java/tree/master</url>
-		<tag>HEAD</tag>
-	</scm>
+<!--	<scm>-->
+<!--		<connection>scm:git:git://github.com/devopvoid/webrtc-java.git</connection>-->
+<!--		<developerConnection>scm:git:ssh://git@github.com/devopvoid/webrtc-java.git</developerConnection>-->
+<!--		<url>https://github.com/devopvoid/webrtc-java/tree/master</url>-->
+<!--		<tag>HEAD</tag>-->
+<!--	</scm>-->
 
-	<distributionManagement>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-		<repository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-		</repository>
-	</distributionManagement>
+<!--	<distributionManagement>-->
+<!--		<snapshotRepository>-->
+<!--			<id>ossrh</id>-->
+<!--			<url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
+<!--		</snapshotRepository>-->
+<!--		<repository>-->
+<!--			<id>ossrh</id>-->
+<!--			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>-->
+<!--		</repository>-->
+<!--	</distributionManagement>-->
 
 	<properties>
 		<timestamp>${maven.build.timestamp}</timestamp>

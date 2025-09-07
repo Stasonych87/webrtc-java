@@ -201,7 +201,7 @@ JNIEXPORT jobject JNICALL Java_dev_onvoid_webrtc_PeerConnectionFactory_createVid
 }
 
 JNIEXPORT jobject JNICALL Java_dev_onvoid_webrtc_PeerConnectionFactory_createPeerConnection
-(JNIEnv * env, jobject caller, jobject jConfig, jobject jobserver)
+(JNIEnv * env, jobject caller, jobject jConfig, jobject jobserver, jboolean disableEncryption)
 {
 	if (jConfig == nullptr) {
 		env->Throw(jni::JavaNullPointerException(env, "RTCConfiguration is null"));
@@ -214,6 +214,10 @@ JNIEXPORT jobject JNICALL Java_dev_onvoid_webrtc_PeerConnectionFactory_createPee
 
 	webrtc::PeerConnectionFactoryInterface * factory = GetHandle<webrtc::PeerConnectionFactoryInterface>(env, caller);
 	CHECK_HANDLEV(factory, nullptr);
+
+    webrtc::PeerConnectionFactoryInterface::Options * options = GetHandle<webrtc::PeerConnectionFactoryInterface::Options>(env, caller);
+	CHECK_HANDLEV(options, nullptr);
+    options->disable_encryption = disableEncryption;
 
 	webrtc::PeerConnectionInterface::RTCConfiguration configuration = jni::RTCConfiguration::toNative(env, jni::JavaLocalRef<jobject>(env, jConfig));
 	webrtc::PeerConnectionObserver * observer = new jni::PeerConnectionObserver(env, jni::JavaGlobalRef<jobject>(env, jobserver));

@@ -69,9 +69,45 @@ jobs:
 
       - name: Test
         run: mvn -B jar:jar surefire:test
+      - name: Show current Dir
+        run: ls ./webrtc/target && ls ./webrtc-jni/target
+        shell: bash
 
-      - name: Deploy
-        env:
-          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
-        run: mvn deploy -DskipTests -s .github/workflows/settings.xml
+      - name: Archive Artifact 1
+        uses: actions/upload-artifact@v4
+        with:
+          name: webrtc_jni_${{ inputs.platform-name }}
+          path: ./webrtc-jni/target/*.jar
+          overwrite: true
+
+      - name: Archive Artifact 1
+        uses: actions/upload-artifact@v4
+        with:
+          name: webrtc_java
+          path: ./webrtc/target/*.jar
+          overwrite: true
+
+      - name: Create Artifacts Dir
+        run: mkdir artifacts
+        shell: bash
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: webrtc_jni_${{ inputs.platform-name }}
+          path: artifacts
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: webrtc_java
+          path: artifacts
+
+      - name: List Artifacts
+        run: ls artifacts
+        shell: bash
+#      - name: Deploy
+#        env:
+#          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+#          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+#        run: mvn deploy -DskipTests -s .github/workflows/settings.xml
