@@ -76,7 +76,7 @@ jobs:
       - name: Archive Artifact 1
         uses: actions/upload-artifact@v4
         with:
-          name: webrtc_jni_${{ inputs.platform-name }}
+          name: webrtc_jni_${{ runner.os }}
           path: ./webrtc-jni/target/*.jar
           overwrite: true
 
@@ -94,7 +94,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: webrtc_jni_${{ inputs.platform-name }}
+          name: webrtc_jni_${{ runner.os }}
           path: artifacts
 
       - name: Download Artifacts
