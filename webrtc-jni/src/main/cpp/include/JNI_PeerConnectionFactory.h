@@ -37,7 +37,7 @@ extern "C" {
 	 * Signature: (Ldev/onvoid/webrtc/RTCConfiguration;Ldev/onvoid/webrtc/PeerConnectionObserver;)Ldev/onvoid/webrtc/RTCPeerConnection;
 	 */
 	JNIEXPORT jobject JNICALL Java_dev_onvoid_webrtc_PeerConnectionFactory_createPeerConnection
-	(JNIEnv *, jobject, jobject, jobject);
+	(JNIEnv *, jobject, jobject, jobject, jboolean enable);
 
 	/*
 	 * Class:     dev_onvoid_webrtc_PeerConnectionFactory

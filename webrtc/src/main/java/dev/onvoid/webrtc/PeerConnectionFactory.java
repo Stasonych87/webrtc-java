@@ -138,11 +138,26 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 * @param config   The peer connection configuration.
 	 * @param observer The observer that receives peer connection state
 	 *                 changes.
+	 * @param disableEncryption   disable or enable rtp encryption
 	 *
 	 * @return The created peer connection.
 	 */
 	public native RTCPeerConnection createPeerConnection(
-			RTCConfiguration config, PeerConnectionObserver observer);
+			RTCConfiguration config, PeerConnectionObserver observer, boolean disableEncryption);
+
+	/**
+	 * Creates a new {@link RTCPeerConnection} with default enabled rtp encryption.
+	 *
+	 * @param config   The peer connection configuration.
+	 * @param observer The observer that receives peer connection state
+	 *                 changes.
+	 *
+	 * @return The created peer connection.
+	 */
+	public RTCPeerConnection createPeerConnection(
+			RTCConfiguration config, PeerConnectionObserver observer) {
+		return createPeerConnection(config, observer, false);
+    };
 
 	/**
 	 * Returns the capabilities of the system for receiving media of the given
