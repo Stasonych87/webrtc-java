@@ -258,19 +258,19 @@ if (PATCHES)
     foreach(PATCH ${PATCHES})
         message(STATUS "Applying ${PATCH}")
 
-        execute_process(
+        #[[execute_process(
             COMMAND git apply
             WORKING_DIRECTORY "${WEBRTC_SRC_DIR}/src"
             INPUT_FILE "${PATCH}"
             OUTPUT_VARIABLE OUTPUT
-            RESULT_VARIABLE RESULT)
+            RESULT_VARIABLE RESULT).]]
         # Petrashov - этот метод почему-то не применял патчи к ветке
-		#[[execute_process(
+		execute_process(
 			COMMAND ${PATCH_BIN} -p0 --forward
 			WORKING_DIRECTORY "${WEBRTC_SRC_DIR}"
 			INPUT_FILE "${PATCH}"
 			OUTPUT_VARIABLE OUTPUT
-			RESULT_VARIABLE RESULT).]]
+			RESULT_VARIABLE RESULT)
 
 		if (RESULT EQUAL 0)
 			message(STATUS "Patch applied: ${PATCH}")
