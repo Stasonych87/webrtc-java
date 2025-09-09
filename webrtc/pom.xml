@@ -43,7 +43,6 @@
 						--add-opens webrtc.java/dev.onvoid.webrtc.media.audio=ALL-UNNAMED
 						--add-opens webrtc.java/dev.onvoid.webrtc.media.video=ALL-UNNAMED
 					</argLine>
-					<forkCount>0</forkCount>
 				</configuration>
 			</plugin>
 		</plugins>

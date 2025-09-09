@@ -232,14 +232,14 @@ file(GLOB PATCHES "${CMAKE_CURRENT_LIST_DIR}/patches/${SOURCE_TARGET}/*.patch")
 message(STATUS "WebRTC PATCHES ${CMAKE_CURRENT_LIST_DIR}/patches/${SOURCE_TARGET}/*.patch")
 
 if (PATCHES)
-    message(STATUS "WebRTC: patch")
+    message(STATUS "WebRTC: patch to path ${WEBRTC_SRC}")
 
     foreach(PATCH ${PATCHES})
         message(STATUS "Applying ${PATCH}")
 
         execute_process(
-            COMMAND patch -p0 --forward
-            WORKING_DIRECTORY "${WEBRTC_SRC_DIR}"
+            COMMAND git apply
+            WORKING_DIRECTORY "${WEBRTC_SRC}"
             INPUT_FILE "${PATCH}"
             OUTPUT_VARIABLE OUTPUT
             RESULT_VARIABLE RESULT)
@@ -251,51 +251,6 @@ if (PATCHES)
         endif()
     endforeach(PATCH)
 endif()
-
-#[[if(WIN32)
-	# prioritize Git Patch on Windows as other Patches may be very old and incompatible.
-	find_package(Git)
-	message(STATUS "Git_FOUND ______ ${Git_FOUND}")
-	if(Git_FOUND)
-		get_filename_component(GIT_DIR ${GIT_EXECUTABLE} DIRECTORY)
-		get_filename_component(GIT_DIR ${GIT_DIR} DIRECTORY)
-	else()
-        message(STATUS "Warning: git dir not found ...")
-	endif()
-endif()
-
-message(STATUS "GIT_DIR ${GIT_DIR}")
-find_program(PATCH_BIN
-	NAMES patch
-	HINTS ${GIT_DIR}
-	PATH_SUFFIXES usr/bin
-)
-
-if(NOT PATCH_BIN)
-	message(FATAL_ERROR "Did not find GNU Patch")
-endif()
-
-
-if (PATCHES)
-    message(STATUS "WebRTC: patch")
-
-    foreach(PATCH ${PATCHES})
-        message(STATUS "Applying ${PATCH}")
-        # Petrashov - этот метод почему-то не применял патчи к ветке
-		execute_process(
-			COMMAND ${PATCH_BIN} -p0 --forward
-			WORKING_DIRECTORY "${WEBRTC_SRC_DIR}"
-			INPUT_FILE "${PATCH}"
-			OUTPUT_VARIABLE OUTPUT
-			RESULT_VARIABLE RESULT)
-
-		if (RESULT EQUAL 0)
-			message(STATUS "Patch applied: ${PATCH}")
-		else()
-		    message(STATUS "Warning: Patch ${PATCH} not applied ...")
-		endif()
-	endforeach(PATCH)
-endif().]]
 
 message(STATUS "WebRTC: generate")
 set(COMPILE_ARGS "target_cpu=\"${TARGET_CPU}\" \
