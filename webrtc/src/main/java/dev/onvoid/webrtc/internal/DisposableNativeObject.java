@@ -17,7 +17,7 @@
 package dev.onvoid.webrtc.internal;
 
 /**
- * Allows to dispose the native object bound to the Java object and free native
+ * Allows disposing the native object bound to the Java object and free native
  * resources.
  *
  * @author Alex Andres

@@ -40,6 +40,7 @@ namespace jni
 				jfieldID bundlePolicy;
 				jfieldID rtcpMuxPolicy;
 				jfieldID certificates;
+				jfieldID portAllocatorConfig;
 		};
 
 		JavaLocalRef<jobject> toJava(JNIEnv * env, const webrtc::PeerConnectionInterface::RTCConfiguration & config);

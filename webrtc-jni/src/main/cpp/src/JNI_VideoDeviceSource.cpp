@@ -29,8 +29,6 @@
 #include "JavaString.h"
 #include "JavaUtils.h"
 
-#include "rtc_base/logging.h"
-
 JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_media_video_VideoDeviceSource_setVideoCaptureDevice
 (JNIEnv * env, jobject caller, jobject device)
 {

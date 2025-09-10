@@ -22,8 +22,6 @@
 
 #include <jni.h>
 
-//#include "third_party/breakpad/breakpad/src/common/basictypes.h"
-
 namespace jni
 {
 	class AudioConverter
