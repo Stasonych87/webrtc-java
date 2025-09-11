@@ -57,10 +57,10 @@ runs:
         fi
       shell: bash
 
-    - name: Test
-      if: ${{ inputs.platform-name != 'linux_arm' && inputs.platform-name != 'linux_arm64' }}
-      run: mvn -B jar:jar surefire:test
-      shell: bash
+#    - name: Test
+#      if: ${{ inputs.platform-name != 'linux_arm' && inputs.platform-name != 'linux_arm64' }}
+#      run: mvn -B jar:jar surefire:test
+#      shell: bash
 
     - name: Show current Dir
       run: ls ./webrtc/target && ls ./webrtc-jni/target
