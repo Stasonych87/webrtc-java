@@ -36,7 +36,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-					<forkCount>0</forkCount>
 					<argLine>
 						--add-opens webrtc.java/dev.onvoid.webrtc=ALL-UNNAMED
 						--add-opens webrtc.java/dev.onvoid.webrtc.logging=ALL-UNNAMED
