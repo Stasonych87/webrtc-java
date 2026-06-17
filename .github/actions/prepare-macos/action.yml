@@ -8,7 +8,7 @@ runs:
     - name: Install required packages
       run: |
         # Required on macos-14
-        -arm64 brew install python-setuptools
+        arch -arm64 brew install python-setuptools
       shell: bash
 
     - name: Select Xcode version
