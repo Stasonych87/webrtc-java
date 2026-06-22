@@ -8,9 +8,9 @@ runs:
     - name: Install required packages
       run: |
         # Required on macos-14
-        arch -arm64 brew install python-setuptools
+        brew install python-setuptools
       shell: bash
 
     - name: Select Xcode version
-      run: sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
+      run: sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
       shell: bash
