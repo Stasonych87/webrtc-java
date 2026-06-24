@@ -100,15 +100,15 @@ jobs:
         name: Prepare build
         uses: ./.github/actions/prepare-macos
 
-      - id: maven-build-arm64
-        name: Maven build - Apple Silicon
-        if: matrix.platform.name == 'macos_arm64'
-        uses: ./.github/actions/build
-        with:
-          java-version: ${{ matrix.java }}
-          platform-name: ${{ matrix.platform.name }}
-          maven-username: ${{ secrets.MAVEN_USERNAME }}
-          maven-password: ${{ secrets.MAVEN_TOKEN }}
+#      - id: maven-build-arm64
+#        name: Maven build - Apple Silicon
+#        if: matrix.platform.name == 'macos_arm64'
+#        uses: ./.github/actions/build
+#        with:
+#          java-version: ${{ matrix.java }}
+#          platform-name: ${{ matrix.platform.name }}
+#          maven-username: ${{ secrets.MAVEN_USERNAME }}
+#          maven-password: ${{ secrets.MAVEN_TOKEN }}
 
       - id: maven-build-x86_64
         name: Maven build - Intel
