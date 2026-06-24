@@ -86,8 +86,10 @@ jobs:
 #            runs-on: macos-14
 #          - name: macos_arm64
 #          runs-on: macos-14
-          - name: macos_arm64
-            runs-on: [self-hosted,mac-office-arm64]
+          - name: macos_x86-64
+          - runs-on: [ self-hosted,mac-office-x86 ]
+#          - name: macos_arm64
+#            runs-on: [self-hosted,mac-office-arm64]
         java: [17]
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
