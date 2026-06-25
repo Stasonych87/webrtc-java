@@ -150,6 +150,8 @@ if(LINUX AND NOT TARGET_CPU MATCHES "^arm")
     target_link_directories(${PROJECT_NAME} PUBLIC "${TARGET_LIB_DIR}")
 endif()
 
+message(STATUS "TEST 1")
+
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         ${TARGET_INC_DIR}
@@ -179,6 +181,8 @@ elseif(WIN32)
     target_link_libraries(${PROJECT_NAME} D3D11 DXGI user32 gdi32 iphlpapi dmoguids msdmo secur32 strmiids winmm wmcodecdspuuid ws2_32)
 endif()
 
+message(STATUS "TEST 2")
+
 if(EXISTS "${WEBRTC_LIB_PATH}" OR EXISTS "${WEBRTC_LIB_PATH_INSTALLED}")
     message(STATUS "WebRTC: Compiled version found '${TARGET_LINK_LIB}'")
 
@@ -197,6 +201,8 @@ if(NOT EXISTS "${WEBRTC_SRC_DIR}/depot_tools")
         WORKING_DIRECTORY "${WEBRTC_SRC_DIR}"
     )
 endif()
+
+message(STATUS "TEST 3")
 
 set(ENV{PATH} "${WEBRTC_SRC_DIR}/depot_tools${PATH_SEP}$ENV{PATH}")
 
@@ -269,6 +275,8 @@ rtc_use_h264=true \
 ffmpeg_branding=\"Chrome\" \
 symbol_level=0")
 
+message(STATUS "TEST 4")
+
 if(APPLE)
     set(COMPILE_ARGS "${COMPILE_ARGS} mac_deployment_target=\"${CMAKE_OSX_DEPLOYMENT_TARGET}\"")
 elseif(LINUX)
@@ -302,6 +310,8 @@ else()
         WORKING_DIRECTORY "${WEBRTC_SRC}"
     )
 endif()
+
+message(STATUS "TEST 5")
 
 if(LINUX)
     if(LINUX AND NOT TARGET_CPU MATCHES "^arm")
@@ -343,6 +353,7 @@ if(LINUX)
     endif()
 endif()
 
+message(STATUS "TEST 6")
 install(FILES "${WEBRTC_LIB_PATH}" DESTINATION "${WEBRTC_INSTALL_DIR}/lib")
 install(
     DIRECTORY "${WEBRTC_SRC}/"
@@ -369,7 +380,7 @@ install(
         REGEX /src/tools_webrtc/ EXCLUDE
         REGEX /test/ EXCLUDE
 )
-
+message(STATUS "TEST 7")
 # Delete empty directories
 install(CODE "
     file(GLOB_RECURSE headers LIST_DIRECTORIES true ${WEBRTC_INSTALL_DIR}/include/!*)
