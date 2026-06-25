@@ -117,7 +117,7 @@ elseif(LINUX)
 elseif(WIN32)
     target_link_libraries(${PROJECT_NAME} dwmapi.lib mf.lib mfreadwrite.lib mfplat.lib mfuuid.lib shcore.lib)
 endif()
-message(STATUS "TEST - 7")
+message(STATUS "TEST - 7 ${PROJECT_NAME} ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX}  ")
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX} COMPONENT Runtime
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX} COMPONENT Runtime
