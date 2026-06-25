@@ -7,6 +7,8 @@ endif()
 
 project(webrtc-java)
 
+message(STATUS "TEST - 1")
+
 if(UNIX AND NOT APPLE)
     # Apply the sysroot configuration for the actual build
     if(DEFERRED_SYSROOT)
@@ -27,6 +29,7 @@ if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
 endif()
 
+message(STATUS "TEST - 2")
 if(APPLE)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -s")
@@ -40,7 +43,7 @@ elseif(WIN32)
     set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
     set(SOURCE_TARGET windows)
 endif()
-
+message(STATUS "TEST - 3")
 if (CMAKE_CXX_COMPILER_ID STREQUAL Clang AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /showFilenames")
 endif()
@@ -60,7 +63,7 @@ file(GLOB SOURCES_MEDIA_VIDEO_DESKTOP_OS "src/media/video/desktop/${SOURCE_TARGE
 file(GLOB SOURCES_MEDIA_VIDEO_OS "src/media/video/${SOURCE_TARGET}/*.cpp")
 file(GLOB SOURCES_PLATFORM "src/platform/${SOURCE_TARGET}/*.cpp")
 file(GLOB SOURCES_RTC "src/rtc/*.cpp")
-
+message(STATUS "TEST - 4")
 list(APPEND SOURCES
     ${SOURCES_ROOT}
     ${SOURCES_API}
@@ -88,7 +91,7 @@ target_include_directories(${PROJECT_NAME}
         include/media
         include/rtc
 )
-
+message(STATUS "TEST - 5")
 set_target_properties(${PROJECT_NAME} PROPERTIES
     OUTPUT_NAME "${PROJECT_NAME}-${OUTPUT_NAME_SUFFIX}"
     CXX_STANDARD 20
@@ -98,7 +101,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 target_link_libraries(${PROJECT_NAME} jni-voithos)
 target_link_libraries(${PROJECT_NAME} webrtc)
-
+message(STATUS "TEST - 6")
 if(APPLE)
     set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS "-x objective-c++")
     target_link_options(${PROJECT_NAME} PRIVATE "-ObjC")
@@ -114,7 +117,7 @@ elseif(LINUX)
 elseif(WIN32)
     target_link_libraries(${PROJECT_NAME} dwmapi.lib mf.lib mfreadwrite.lib mfplat.lib mfuuid.lib shcore.lib)
 endif()
-
+message(STATUS "TEST - 7")
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX} COMPONENT Runtime
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX} COMPONENT Runtime

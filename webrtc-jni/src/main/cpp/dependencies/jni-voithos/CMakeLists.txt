@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 project(jni-voithos)
-
+message(STATUS "TEST +++ 1")
 add_library(${PROJECT_NAME} STATIC)
 
 target_sources(${PROJECT_NAME}
@@ -57,7 +57,7 @@ target_sources(${PROJECT_NAME}
         src/JavaUtils.cpp
         src/JavaWrappedException.cpp
 )
-
+message(STATUS "TEST +++ 2")
 if(APPLE)
     set(JNI_PLATFORM "darwin")
     set_source_files_properties(src/*.cpp PROPERTIES COMPILE_FLAGS "-x objective-c++")
@@ -66,7 +66,7 @@ elseif(LINUX)
 elseif(WIN32)
     set(JNI_PLATFORM "windows")
 endif()
-
+message(STATUS "TEST +++ 3")
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
@@ -79,7 +79,7 @@ target_include_directories(${PROJECT_NAME}
         include/jni
         include/jni/${JNI_PLATFORM}
 )
-
+message(STATUS "TEST +++ 4")
 if(LINUX)
     target_link_libraries(${PROJECT_NAME} PRIVATE webrtc)
 endif()
