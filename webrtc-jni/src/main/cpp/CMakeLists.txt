@@ -91,7 +91,7 @@ target_include_directories(${PROJECT_NAME}
         include/media
         include/rtc
 )
-message(STATUS "TEST - 5")
+message(STATUS "TEST - 5  ${PROJECT_NAME}-${OUTPUT_NAME_SUFFIX}")
 set_target_properties(${PROJECT_NAME} PROPERTIES
     OUTPUT_NAME "${PROJECT_NAME}-${OUTPUT_NAME_SUFFIX}"
     CXX_STANDARD 20
