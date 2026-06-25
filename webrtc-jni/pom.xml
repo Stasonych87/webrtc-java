@@ -198,18 +198,18 @@
 				<cmake.toolchain.file>toolchain/aarch64-linux-clang.cmake</cmake.toolchain.file>
 			</properties>
 		</profile>
-		<profile>
-			<id>macos-aarch64</id>
-			<activation>
-				<os>
-					<family>mac</family>
-					<arch>aarch64</arch>
-				</os>
-			</activation>
-			<properties>
-				<cmake.toolchain.file>toolchain/aarch64-macos-clang.cmake</cmake.toolchain.file>
-			</properties>
-		</profile>
+<!--		<profile>-->
+<!--			<id>macos-aarch64</id>-->
+<!--			<activation>-->
+<!--				<os>-->
+<!--					<family>mac</family>-->
+<!--					<arch>aarch64</arch>-->
+<!--				</os>-->
+<!--			</activation>-->
+<!--			<properties>-->
+<!--				<cmake.toolchain.file>toolchain/aarch64-macos-clang.cmake</cmake.toolchain.file>-->
+<!--			</properties>-->
+<!--		</profile>-->
 		<profile>
 			<id>macos-x86_64</id>
 			<properties>
