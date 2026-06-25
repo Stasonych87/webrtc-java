@@ -85,7 +85,8 @@
 						<configuration>
 							<downloadBinaries>false</downloadBinaries>
 							<sourcePath>src/main/cpp</sourcePath>
-							<targetPath>${project.build.directory}/${platform.classifier}</targetPath>
+<!--							<targetPath>${project.build.directory}/${platform.classifier}</targetPath>-->
+                            <targetPath>${project.build.directory}/blablabla</targetPath>
 							<options>
 								<option>
 									"${cmake.options}"
