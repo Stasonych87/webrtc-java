@@ -211,7 +211,7 @@
 			</properties>
 		</profile>
 		<profile>
-			<id>macos-x86_64</id>
+			<id>macos-cross-x86_64</id>
 			<properties>
 				<cmake.toolchain.file>toolchain/x86_64-macos-cross.cmake</cmake.toolchain.file>
 			</properties>
