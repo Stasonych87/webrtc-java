@@ -7,6 +7,8 @@ endif()
 
 project(webrtc-java)
 
+return()
+
 message(STATUS "TEST - 1")
 
 if(UNIX AND NOT APPLE)

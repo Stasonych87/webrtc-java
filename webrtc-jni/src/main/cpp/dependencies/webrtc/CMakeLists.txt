@@ -52,6 +52,8 @@ if(NOT DEFINED WEBRTC_INSTALL_DIR)
     file(REMOVE_RECURSE "${WEBRTC_INSTALL_DIR}")
 endif()
 
+return()
+
 if(WIN32)
     set(ENV{DEPOT_TOOLS_WIN_TOOLCHAIN} 0)
     set(SHELLCOMMAND cmd /c )
