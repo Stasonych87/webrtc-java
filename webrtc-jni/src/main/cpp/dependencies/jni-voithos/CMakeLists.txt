@@ -3,8 +3,6 @@ project(jni-voithos)
 message(STATUS "TEST +++ 1")
 add_library(${PROJECT_NAME} STATIC)
 
-return()
-
 target_sources(${PROJECT_NAME}
     INTERFACE
         include/jni/jni.h
