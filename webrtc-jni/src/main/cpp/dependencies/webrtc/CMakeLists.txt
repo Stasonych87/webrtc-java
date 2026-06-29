@@ -51,6 +51,7 @@ if(NOT DEFINED WEBRTC_INSTALL_DIR)
     set(WEBRTC_INSTALL_DIR "${WEBRTC_SRC_DIR}/build")
 endif()
 
+message(STATUS "TEST DELETE BUILD DIR ---------")
 file(REMOVE_RECURSE "${WEBRTC_INSTALL_DIR}")
 
 return()
