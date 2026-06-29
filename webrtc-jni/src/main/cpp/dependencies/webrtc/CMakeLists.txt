@@ -131,6 +131,8 @@ message(STATUS "WebRTC build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "WebRTC use custom libcxx: ${CUSTOM_LIBCXX}")
 message(STATUS "WebRTC install path: ${WEBRTC_INSTALL_DIR}")
 
+return()
+
 
 if(EXISTS "${WEBRTC_LIB_PATH_INSTALLED}")
     set(TARGET_INC_DIR ${WEBRTC_INSTALL_DIR}/include)
