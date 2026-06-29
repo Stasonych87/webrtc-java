@@ -54,8 +54,6 @@ endif()
 message(STATUS "TEST DELETE BUILD DIR ---------")
 file(REMOVE_RECURSE "${WEBRTC_INSTALL_DIR}")
 
-return()
-
 if(WIN32)
     set(ENV{DEPOT_TOOLS_WIN_TOOLCHAIN} 0)
     set(SHELLCOMMAND cmd /c )
