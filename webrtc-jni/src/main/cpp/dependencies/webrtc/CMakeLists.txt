@@ -49,8 +49,9 @@ endif()
 
 if(NOT DEFINED WEBRTC_INSTALL_DIR)
     set(WEBRTC_INSTALL_DIR "${WEBRTC_SRC_DIR}/build")
-    file(REMOVE_RECURSE "${WEBRTC_INSTALL_DIR}")
 endif()
+
+file(REMOVE_RECURSE "${WEBRTC_INSTALL_DIR}")
 
 return()
 
