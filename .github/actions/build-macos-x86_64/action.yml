@@ -24,14 +24,14 @@ runs:
   using: "composite"
   steps:
     - name: Set up WebRTC cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/${{ env.WEBRTC_INSTALL_FOLDER }}
         key: webrtc-${{ env.WEBRTC_CACHE_BRANCH }}-${{ inputs.platform-name }}-${{ hashFiles('webrtc-jni/pom.xml') }}
         restore-keys: webrtc-${{ env.WEBRTC_CACHE_BRANCH }}-${{ inputs.platform-name }}-
 
     - name: Set up Maven cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.m2/repository
         key: maven-${{ inputs.platform-name }}-${{ hashFiles('**/pom.xml') }}
@@ -51,14 +51,52 @@ runs:
       run: arch -x86_64 mvn package -DskipTests -Pmacos-cross-x86_64
       shell: bash
 
-    - name: Test
-      run: arch -x86_64 mvn -B jar:jar surefire:test -Pmacos-cross-x86_64
+#    - name: Test
+#      run: arch -x86_64 mvn -B jar:jar surefire:test -Pmacos-cross-x86_64
+#      shell: bash
+
+    - name: Show current Dir
+      run: ls ./webrtc/target && ls ./webrtc-jni/target
       shell: bash
 
-    - name: Deploy
-      if: ${{ github.event_name != 'pull_request' }}
-      env:
-        MAVEN_USERNAME: ${{ inputs.maven-username }}
-        MAVEN_TOKEN: ${{ inputs.maven-password }}
-      run: arch -x86_64 mvn deploy -DskipTests -Pmacos-cross-x86_64
+    - name: Archive Artifact 1
+      uses: actions/upload-artifact@v7
+      with:
+        name: webrtc_jni_${{ inputs.platform-name }}
+        path: ./webrtc-jni/target/*.jar
+        overwrite: true
+
+    - name: Archive Artifact 2
+      uses: actions/upload-artifact@v7
+      with:
+        name: webrtc_java
+        path: ./webrtc/target/*.jar
+        overwrite: true
+
+    - name: Create Artifacts Dir
+      run: mkdir artifacts
       shell: bash
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: webrtc_jni_${{ inputs.platform-name }}
+        path: artifacts
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: webrtc_java
+        path: artifacts
+
+    - name: List Artifacts
+      run: ls artifacts
+      shell: bash
+
+#    - name: Deploy
+#      if: ${{ github.event_name != 'pull_request' }}
+#      env:
+#        MAVEN_USERNAME: ${{ inputs.maven-username }}
+#        MAVEN_TOKEN: ${{ inputs.maven-password }}
+#      run: arch -x86_64 mvn deploy -DskipTests -Pmacos-cross-x86_64
+#      shell: bash

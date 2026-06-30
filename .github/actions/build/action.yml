@@ -62,17 +62,55 @@ runs:
       run: mvn -B jar:jar surefire:test
       shell: bash
 
-    - name: Deploy
-      if: ${{ github.event_name != 'pull_request' }}
-      env:
-        MAVEN_USERNAME: ${{ inputs.maven-username }}
-        MAVEN_TOKEN: ${{ inputs.maven-password }}
-      run: |
-        if [ "${{ inputs.platform-name }}" == "linux_arm" ]; then
-          mvn deploy -DskipTests -Plinux-aarch32
-        elif [ "${{ inputs.platform-name }}" == "linux_arm64" ]; then
-          mvn deploy -DskipTests -Plinux-aarch64
-        else
-          mvn deploy -DskipTests
-        fi
+    - name: Show current Dir
+      run: ls ./webrtc/target && ls ./webrtc-jni/target
       shell: bash
+
+    - name: Archive Artifact 1
+      uses: actions/upload-artifact@v7
+      with:
+        name: webrtc_jni_${{ inputs.platform-name }}
+        path: ./webrtc-jni/target/*.jar
+        overwrite: true
+
+    - name: Archive Artifact 2
+      uses: actions/upload-artifact@v7
+      with:
+        name: webrtc_java
+        path: ./webrtc/target/*.jar
+        overwrite: true
+
+    - name: Create Artifacts Dir
+      run: mkdir artifacts
+      shell: bash
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: webrtc_jni_${{ inputs.platform-name }}
+        path: artifacts
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: webrtc_java
+        path: artifacts
+
+    - name: List Artifacts
+      run: ls artifacts
+      shell: bash
+
+#    - name: Deploy
+#      if: ${{ github.event_name != 'pull_request' }}
+#      env:
+#        MAVEN_USERNAME: ${{ inputs.maven-username }}
+#        MAVEN_TOKEN: ${{ inputs.maven-password }}
+#      run: |
+#        if [ "${{ inputs.platform-name }}" == "linux_arm" ]; then
+#          mvn deploy -DskipTests -Plinux-aarch32
+#        elif [ "${{ inputs.platform-name }}" == "linux_arm64" ]; then
+#          mvn deploy -DskipTests -Plinux-aarch64
+#        else
+#          mvn deploy -DskipTests
+#        fi
+#      shell: bash
