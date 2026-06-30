@@ -101,19 +101,28 @@ namespace jni
 
 	bool DesktopCapturer::GetSourceList(webrtc::DesktopCapturer::SourceList * sources)
 	{
-	    if (!capturer) return;
+	    if (!capturer) {
+	        RTC_LOG(LS_ERROR) << ("DesktopCapturer: failed call GetSourceList because screenCapturer is null");
+	        return false;
+	    }
 		return capturer->GetSourceList(sources);
 	}
 
 	bool DesktopCapturer::SelectSource(webrtc::DesktopCapturer::SourceId id)
 	{
-	    if (!capturer) return;
+	    if (!capturer) {
+            RTC_LOG(LS_ERROR) << ("DesktopCapturer: failed call SelectSource because screenCapturer is null");
+            return false;
+        }
 		return capturer->SelectSource(id);
 	}
 
 	bool DesktopCapturer::FocusOnSelectedSource()
 	{
-	    if (!capturer) return;
+	    if (!capturer) {
+            RTC_LOG(LS_ERROR) << ("DesktopCapturer: failed call FocusOnSelectedSource because screenCapturer is null");
+            return false;
+        }
 		return capturer->FocusOnSelectedSource();
 	}
 
@@ -124,7 +133,10 @@ namespace jni
 
 	bool DesktopCapturer::IsOccluded(const webrtc::DesktopVector & pos)
 	{
-	    if (!capturer) return;
+	    if (!capturer) {
+            RTC_LOG(LS_ERROR) << ("DesktopCapturer: failed call IsOccluded because screenCapturer is null");
+            return false;
+        }
 		return capturer->IsOccluded(pos);
 	}
 }
