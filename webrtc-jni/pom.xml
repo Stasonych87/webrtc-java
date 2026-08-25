@@ -5,14 +5,14 @@
 	<parent>
 		<groupId>dev.onvoid.webrtc</groupId>
 		<artifactId>webrtc-java-parent</artifactId>
-		<version>0.15.1</version>
+		<version>0.16.1</version>
 	</parent>
 
 	<artifactId>webrtc-java-jni</artifactId>
 	<packaging>pom</packaging>
 
 	<properties>
-		<webrtc.branch>branch-heads/7339</webrtc.branch>
+		<webrtc.branch>branch-heads/7977</webrtc.branch>
 		<webrtc.src.dir>${user.home}/webrtc</webrtc.src.dir>
 		<webrtc.install.dir>${user.home}/webrtc/build</webrtc.install.dir>
 		<cmake.build.type>Release</cmake.build.type>
@@ -74,7 +74,7 @@
 			<plugin>
 				<groupId>com.googlecode.cmake-maven-project</groupId>
 				<artifactId>cmake-maven-plugin</artifactId>
-				<version>3.22.1-b1</version>
+				<version>3.31.5-b1</version>
 				<executions>
 					<execution>
 						<id>cmake-generate</id>

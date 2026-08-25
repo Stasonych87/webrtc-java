@@ -21,10 +21,10 @@
 JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_media_video_desktop_ScreenCapturer_initialize
 (JNIEnv * env, jobject caller)
 {
-    try {
-        SetHandle(env, caller, new jni::DesktopCapturer(true));
-    }
-    catch (...) {
-        ThrowCxxJavaException(env);
-    }
+	try {
+		SetHandle(env, caller, new jni::DesktopCapturer(true));
+	}
+	catch (...) {
+		ThrowCxxJavaException(env);
+	}
 }

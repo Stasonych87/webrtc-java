@@ -45,8 +45,8 @@ namespace jni
 			void OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState state) override;
 			void OnIceCandidate(const webrtc::IceCandidateInterface * candidate) override;
 			void OnIceCandidateError(const std::string & address, int port, const std::string & url, int error_code, const std::string & error_text) override;
-			void OnIceCandidatesRemoved(const std::vector<webrtc::Candidate> & candidates) override;
 			void OnIceConnectionReceivingChange(bool receiving) override;
+			void OnIceSelectedCandidatePairChanged(const webrtc::CandidatePairChangeEvent & event) override;
 
 		private:
 			class JavaPeerConnectionObserverClass : public JavaClass
@@ -65,8 +65,8 @@ namespace jni
 					jmethodID onIceGatheringChange;
 					jmethodID onIceCandidate;
 					jmethodID onIceCandidateError;
-					jmethodID onIceCandidatesRemoved;
 					jmethodID onIceConnectionReceivingChange;
+					jmethodID onSelectedCandidatePairChanged;
 			};
 
 		private:

@@ -143,7 +143,10 @@ public class RTCDataChannel extends DisposableNativeObject {
 	public native void dispose();
 
 	/**
-	 * Sends data in the provided buffer to the remote peer.
+	 * Sends data in the provided buffer to the remote peer. Only the bytes
+	 * between the buffer's position and limit are sent, for heap and direct
+	 * buffers alike. The buffer is read through a duplicate, so the caller's
+	 * position is left untouched.
 	 *
 	 * @param buffer The buffer to be queued for transmission.
 	 *
@@ -154,25 +157,75 @@ public class RTCDataChannel extends DisposableNativeObject {
 		ByteBuffer data = buffer.data;
 
 		if (data.isDirect()) {
-			sendDirectBuffer(data, buffer.binary);
-		}
-		else {
-			byte[] arrayBuffer;
-
-			if (data.hasArray()) {
-				arrayBuffer = data.array();
+			if (data.position() == 0 && data.limit() == data.capacity()) {
+				sendDirectBuffer(data, buffer.binary);
 			}
 			else {
-				arrayBuffer = new byte[data.remaining()];
-				data.get(arrayBuffer);
+				ByteBuffer window = ByteBuffer.allocateDirect(data.remaining());
+				window.put(data.duplicate());
+				window.flip();
+				sendDirectBuffer(window, buffer.binary);
 			}
-
-			sendByteArrayBuffer(arrayBuffer, buffer.binary);
 		}
+		else {
+			sendByteArrayBuffer(copyWindow(data), buffer.binary);
+		}
+	}
+
+	/**
+	 * Copies the readable window of a heap buffer, position to limit, into a
+	 * fresh array for the byte array send path, which transmits whole arrays.
+	 * The backing array is handed over directly only when the window covers
+	 * it exactly; bytes outside the window (a nonzero position, a short
+	 * limit, an array offset) must never reach the wire. Reads through a
+	 * duplicate, so the caller's position is left untouched.
+	 */
+	private static byte[] copyWindow(ByteBuffer data) {
+		if (data.hasArray() && data.arrayOffset() == 0 && data.position() == 0
+				&& data.remaining() == data.array().length) {
+			return data.array();
+		}
+		byte[] window = new byte[data.remaining()];
+		data.duplicate().get(window);
+		return window;
 	}
 
 	private native void sendDirectBuffer(ByteBuffer buffer, boolean binary);
 
 	private native void sendByteArrayBuffer(byte[] buffer, boolean binary);
+
+	/**
+	 * Sends data in the provided buffer to the remote peer without blocking
+	 * the calling thread on the native network thread, unlike
+	 * {@link #send(RTCDataChannelBuffer)} whose call is marshalled
+	 * synchronously. The data is copied out of the buffer before this method
+	 * returns, so the buffer may be reused immediately; only the bytes
+	 * between position and limit are sent.
+	 *
+	 * Errors are reported asynchronously: queueing failures are logged
+	 * natively, and fatal errors close the data channel, which the registered
+	 * {@link RTCDataChannelObserver} sees as a state change.
+	 *
+	 * @param buffer The buffer to be queued for transmission.
+	 */
+	public void sendAsync(RTCDataChannelBuffer buffer) {
+		ByteBuffer data = buffer.data;
+
+		if (data.isDirect()) {
+			sendDirectBufferAsync(data, data.position(), data.remaining(), buffer.binary);
+		}
+		else {
+			// The byte array path transmits whole arrays, so copy exactly
+			// the readable window, position to limit; a duplicate leaves
+			// the caller's position untouched.
+			byte[] window = new byte[data.remaining()];
+			data.duplicate().get(window);
+			sendByteArrayBufferAsync(window, buffer.binary);
+		}
+	}
+
+	private native void sendDirectBufferAsync(ByteBuffer buffer, int position, int length, boolean binary);
+
+	private native void sendByteArrayBufferAsync(byte[] buffer, boolean binary);
 
 }

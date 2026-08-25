@@ -36,23 +36,31 @@ namespace jni
 #if defined(WEBRTC_WIN)
 		options.set_allow_directx_capturer(true);
 #endif
+#if defined(WEBRTC_USE_PIPEWIRE)
+		// Wayland: route capture through the PipeWire/xdg-desktop-portal backend.
+		// Only takes effect when IsRunningUnderWayland(); X11 sessions keep the
+		// X11 capturer. The portal delivers frames with the cursor already
+		// composited, so prefer it over DesktopAndCursorComposer's software cursor.
+		options.set_allow_pipewire(true);
+		options.set_prefer_cursor_embedded(true);
+#endif
 
 		std::unique_ptr<webrtc::DesktopCapturer> inner = screenCapturer
-        			? webrtc::DesktopCapturer::CreateScreenCapturer(options)
-        			: webrtc::DesktopCapturer::CreateWindowCapturer(options);
+			? webrtc::DesktopCapturer::CreateScreenCapturer(options)
+			: webrtc::DesktopCapturer::CreateWindowCapturer(options);
 
-        if (!inner) {
-            RTC_LOG(LS_ERROR) << (screenCapturer
-                ? "DesktopCapturer: CreateScreenCapturer returned null. "
-                  "Possible causes: missing X11/XDAMAGE extension, Wayland "
-                  "session without PipeWire support, or snap confinement."
-                : "DesktopCapturer: CreateWindowCapturer returned null. "
-                  "Possible causes: missing X11/XFIXES extension or snap confinement.");
-            // Leave capturer as nullptr; callers check via GetSourceList returning false.
-            return;
-        }
+		if (!inner) {
+			RTC_LOG(LS_ERROR) << (screenCapturer
+				? "DesktopCapturer: CreateScreenCapturer returned null. "
+				  "Possible causes: missing X11/XDAMAGE extension, Wayland "
+				  "session without PipeWire support, or snap confinement."
+				: "DesktopCapturer: CreateWindowCapturer returned null. "
+				  "Possible causes: missing X11/XFIXES extension or snap confinement.");
+			// Leave capturer as nullptr; callers check via GetSourceList returning false.
+			return;
+		}
 
-        capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(std::move(inner), options);
+		capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(std::move(inner), options);
 	}
 
 	DesktopCapturer::~DesktopCapturer()
@@ -62,7 +70,7 @@ namespace jni
 
 	void DesktopCapturer::Start(webrtc::DesktopCapturer::Callback * callback)
 	{
-	    if (!capturer) return;
+		if (!capturer) return;
 
 		capturer->Start(callback);
 
@@ -73,19 +81,20 @@ namespace jni
 
 	void DesktopCapturer::SetMaxFrameRate(uint32_t max_frame_rate)
 	{
-	    if (!capturer) return;
+		if (!capturer) return;
 		capturer->SetMaxFrameRate(max_frame_rate);
 	}
 
 	void DesktopCapturer::SetSharedMemoryFactory(std::unique_ptr<webrtc::SharedMemoryFactory> factory)
 	{
-	    if (!capturer) return;
+		if (!capturer) return;
 		capturer->SetSharedMemoryFactory(std::move(factory));
 	}
 
 	void DesktopCapturer::CaptureFrame()
 	{
-	    if (!capturer) return;
+		if (!capturer) return;
+
 #if defined(WEBRTC_MAC)
 		CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true);
 #endif
@@ -95,7 +104,7 @@ namespace jni
 
 	void DesktopCapturer::SetExcludedWindow(webrtc::WindowId window)
 	{
-	    if (!capturer) return;
+		if (!capturer) return;
 		capturer->SetExcludedWindow(window);
 	}
 

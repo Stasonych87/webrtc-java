@@ -90,14 +90,6 @@ public interface PeerConnectionObserver {
 	}
 
 	/**
-	 * ICE candidates have been removed.
-	 *
-	 * @param candidates The removed ICE candidates.
-	 */
-	default void onIceCandidatesRemoved(RTCIceCandidate[] candidates) {
-	}
-
-	/**
 	 * Media is received on a new stream from the remote peer.
 	 *
 	 * @param stream The new media stream.
@@ -168,6 +160,22 @@ public interface PeerConnectionObserver {
 	 * @param transceiver The RTP transceiver of the created track.
 	 */
 	default void onTrack(RTCRtpTransceiver transceiver) {
+	}
+
+	/**
+	 * ICE has selected (or later re-selected) a candidate pair for this
+	 * connection. Fires once connectivity checks nominate a pair, which is
+	 * before DTLS and SCTP are established and before data channels open, so
+	 * the remote transport address is known before the connection becomes
+	 * usable. May fire again if ICE re-nominates mid session.
+	 *
+	 * @param remoteAddress The remote candidate's IP address. For a relayed
+	 *                      connection this is the TURN relay's address.
+	 * @param remotePort    The remote candidate's port.
+	 * @param candidateType The remote candidate type: "host", "srflx",
+	 *                      "prflx", or "relay".
+	 */
+	default void onSelectedCandidatePairChanged(String remoteAddress, int remotePort, String candidateType) {
 	}
 
 }
