@@ -70,6 +70,16 @@ runs:
       run: ls ./webrtc/target && ls ./webrtc-jni/target
       shell: bash
 
+    - name: Search jars on Dirs
+      run: | 
+        {
+            echo '``` webrtc && webrtc-jni'
+            ls ./webrtc/target/*.jar && ls ./webrtc-jni/target/*.jar
+            echo '``` generated-sources'
+            ls ./webrtc/target/generated-sources
+        }
+      shell: bash
+
     - name: Archive Artifact 1
       uses: actions/upload-artifact@v7
       with:
