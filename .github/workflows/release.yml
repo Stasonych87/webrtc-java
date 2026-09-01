@@ -1,6 +1,13 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**.cpp"
+      - "**.h"
+      - "**.java"
   workflow_dispatch:
     inputs:
       developmentVersion:
