@@ -257,7 +257,8 @@ jobs:
 
   publish-central:
     name: Publish to Maven Central
-    needs: [build-windows, build-linux, build-macos]
+#    needs: [build-windows, build-linux, build-macos]
+    needs: [build-windows]
     outputs:
       release_body: ${{ needs.build-windows.outputs.release_body }}
       release_version: ${{ needs.build-windows.outputs.release_version }}
