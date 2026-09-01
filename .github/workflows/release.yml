@@ -36,27 +36,27 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Generate changelog for the current build
-        uses: orhun/git-cliff-action@v4
-        id: git-cliff
-        with:
-          config: .github/changelog/cliff-release.toml
-          args: -v -u --strip footer --bump --use-branch-tags
-
-      - name: Update CHANGELOG.md
-        uses: orhun/git-cliff-action@v4
-        with:
-          config: .github/changelog/cliff.toml
-          args: -v --bump --use-branch-tags
-        env:
-          OUTPUT: CHANGELOG.md
-
-      - name: Commit CHANGELOG.md
-        if: ${{ !inputs.dryRun }}
-        run: |
-          git add CHANGELOG.md
-          git commit -m "chore(release): Update CHANGELOG.md for ${{ steps.git-cliff.outputs.version }}"
-          git push
+#      - name: Generate changelog for the current build
+#        uses: orhun/git-cliff-action@v4
+#        id: git-cliff
+#        with:
+#          config: .github/changelog/cliff-release.toml
+#          args: -v -u --strip footer --bump --use-branch-tags
+#
+#      - name: Update CHANGELOG.md
+#        uses: orhun/git-cliff-action@v4
+#        with:
+#          config: .github/changelog/cliff.toml
+#          args: -v --bump --use-branch-tags
+#        env:
+#          OUTPUT: CHANGELOG.md
+#
+#      - name: Commit CHANGELOG.md
+#        if: ${{ !inputs.dryRun }}
+#        run: |
+#          git add CHANGELOG.md
+#          git commit -m "chore(release): Update CHANGELOG.md for ${{ steps.git-cliff.outputs.version }}"
+#          git push
 
   prepare-release:
     name: Prepare release
@@ -97,8 +97,8 @@ jobs:
 
       - name: Update development version
         uses: actions/checkout@v6
-        with:
-          ref: main
+#        with:
+#          ref: main
 
       # A dry run transforms the poms and writes release.properties, but creates no
       # commit and no tag, so there is nothing to amend or push below.
@@ -113,20 +113,20 @@ jobs:
           echo "Extracted release version from release.properties: ${RELEASE_VERSION:-<none>}"
           echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
 
-      - name: Push release commit and tag
-        if: ${{ !inputs.dryRun }}
-        run: |
-          # Update versions.ts file
-          echo "Updating versions.ts with release version: $RELEASE_VERSION and development version: ${{ github.event.inputs.developmentVersion }}"
-          sed -i "s/VERSION: '.*'/VERSION: '$RELEASE_VERSION'/g" docs/.vitepress/versions.ts
-          sed -i "s/VERSION_SNAPSHOT: '.*'/VERSION_SNAPSHOT: '${{ github.event.inputs.developmentVersion }}'/g" docs/.vitepress/versions.ts
-
-          # Add the updated file to the existing commit
-          git add docs/.vitepress/versions.ts
-          git commit --amend --no-edit
-
-          git push
-          git push --tags
+#      - name: Push release commit and tag
+#        if: ${{ !inputs.dryRun }}
+#        run: |
+#          # Update versions.ts file
+#          echo "Updating versions.ts with release version: $RELEASE_VERSION and development version: ${{ github.event.inputs.developmentVersion }}"
+#          sed -i "s/VERSION: '.*'/VERSION: '$RELEASE_VERSION'/g" docs/.vitepress/versions.ts
+#          sed -i "s/VERSION_SNAPSHOT: '.*'/VERSION_SNAPSHOT: '${{ github.event.inputs.developmentVersion }}'/g" docs/.vitepress/versions.ts
+#
+#          # Add the updated file to the existing commit
+#          git add docs/.vitepress/versions.ts
+#          git commit --amend --no-edit
+#
+#          git push
+#          git push --tags
 
   build-windows:
     needs: prepare-release
@@ -168,92 +168,92 @@ jobs:
           java-version: ${{ matrix.java }}
           platform-name: ${{ matrix.platform.name }}
 
-  build-linux:
-    needs: prepare-release
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - name: linux_arm
-            runs-on: ubuntu-22.04
-          - name: linux_arm64
-            runs-on: ubuntu-22.04
-          - name: linux_x86-64
-            runs-on: ubuntu-22.04
-        java: [17]
-    runs-on: ${{ matrix.platform.runs-on }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-tags: true
+#  build-linux:
+#    needs: prepare-release
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        platform:
+#          - name: linux_arm
+#            runs-on: ubuntu-22.04
+#          - name: linux_arm64
+#            runs-on: ubuntu-22.04
+#          - name: linux_x86-64
+#            runs-on: ubuntu-22.04
+#        java: [17]
+#    runs-on: ${{ matrix.platform.runs-on }}
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v6
+#        with:
+#          fetch-tags: true
+#
+#      - name: Get tag from current branch
+#        id: tag-selector
+#        if: ${{ !inputs.dryRun }}
+#        run: |
+#          git fetch -a
+#          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+#          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+#          git checkout $tag
+#
+#      - id: prepare-build
+#        name: Prepare release build
+#        uses: ./.github/actions/prepare-linux
+#
+#      - id: maven-build
+#        name: Maven build
+#        uses: ./.github/actions/release
+#        with:
+#          java-version: ${{ matrix.java }}
+#          platform-name: ${{ matrix.platform.name }}
 
-      - name: Get tag from current branch
-        id: tag-selector
-        if: ${{ !inputs.dryRun }}
-        run: |
-          git fetch -a
-          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          git checkout $tag
-
-      - id: prepare-build
-        name: Prepare release build
-        uses: ./.github/actions/prepare-linux
-
-      - id: maven-build
-        name: Maven build
-        uses: ./.github/actions/release
-        with:
-          java-version: ${{ matrix.java }}
-          platform-name: ${{ matrix.platform.name }}
-
-  build-macos:
-    needs: prepare-release
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - name: macos_x86-64
-            runs-on: macos-14
-          - name: macos_arm64
-            runs-on: macos-14
-        java: [17]
-    runs-on: ${{ matrix.platform.runs-on }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-tags: true
-
-      - name: Get tag from current branch
-        id: tag-selector
-        if: ${{ !inputs.dryRun }}
-        run: |
-          git fetch -a
-          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          git checkout $tag
-
-      - id: prepare-build
-        name: Prepare release build
-        uses: ./.github/actions/prepare-macos
-
-      - id: maven-build-arm64
-        name: Maven build - Apple Silicon
-        if: matrix.platform.name == 'macos_arm64'
-        uses: ./.github/actions/release
-        with:
-          java-version: ${{ matrix.java }}
-          platform-name: ${{ matrix.platform.name }}
-
-      - id: maven-build-x86_64
-        name: Maven build - Intel
-        if: matrix.platform.name == 'macos_x86-64'
-        uses: ./.github/actions/release-macos-x86_64
-        with:
-          java-version: ${{ matrix.java }}
-          platform-name: ${{ matrix.platform.name }}
+#  build-macos:
+#    needs: prepare-release
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        platform:
+#          - name: macos_x86-64
+#            runs-on: macos-14
+#          - name: macos_arm64
+#            runs-on: macos-14
+#        java: [17]
+#    runs-on: ${{ matrix.platform.runs-on }}
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v6
+#        with:
+#          fetch-tags: true
+#
+#      - name: Get tag from current branch
+#        id: tag-selector
+#        if: ${{ !inputs.dryRun }}
+#        run: |
+#          git fetch -a
+#          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+#          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+#          git checkout $tag
+#
+#      - id: prepare-build
+#        name: Prepare release build
+#        uses: ./.github/actions/prepare-macos
+#
+#      - id: maven-build-arm64
+#        name: Maven build - Apple Silicon
+#        if: matrix.platform.name == 'macos_arm64'
+#        uses: ./.github/actions/release
+#        with:
+#          java-version: ${{ matrix.java }}
+#          platform-name: ${{ matrix.platform.name }}
+#
+#      - id: maven-build-x86_64
+#        name: Maven build - Intel
+#        if: matrix.platform.name == 'macos_x86-64'
+#        uses: ./.github/actions/release-macos-x86_64
+#        with:
+#          java-version: ${{ matrix.java }}
+#          platform-name: ${{ matrix.platform.name }}
 
   publish-central:
     name: Publish to Maven Central
@@ -266,8 +266,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          fetch-tags: true
+#        with:
+#          fetch-tags: true
 
       - name: Set up Maven cache
         uses: actions/cache@v4
@@ -346,15 +346,15 @@ jobs:
       # a placeholder during a dry run: should the upload ever happen regardless, it
       # fails on authentication instead of publishing a release. Signing does run, so
       # the GPG passphrase stays intact.
-      - name: Deploy
-        env:
-          MAVEN_USERNAME: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_USERNAME }}
-          MAVEN_TOKEN: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_TOKEN }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-        run: >
-          mvn -B deploy -pl .,webrtc -Prelease -DskipTests
-          -Dnatives.dir="$PWD/natives"
-          -DskipPublishing=${{ inputs.dryRun }}
+#      - name: Deploy
+#        env:
+#          MAVEN_USERNAME: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_USERNAME }}
+#          MAVEN_TOKEN: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_TOKEN }}
+#          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+#        run: >
+#          mvn -B deploy -pl .,webrtc -Prelease -DskipTests
+#          -Dnatives.dir="$PWD/natives"
+#          -DskipPublishing=${{ inputs.dryRun }}
 
       - name: Summarize what would have been published
         if: ${{ inputs.dryRun }}
@@ -384,21 +384,21 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-  publish-release:
-    name: Publish GitHub release
-    needs: publish-central
-    if: ${{ !inputs.dryRun }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Publish
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          version="${{ needs.publish-central.outputs.release_version }}"
-          body="${{ needs.publish-central.outputs.release_body }}"
-
-          gh release create $version -d -t "Release $version" -n "$body"
+#  publish-release:
+#    name: Publish GitHub release
+#    needs: publish-central
+#    if: ${{ !inputs.dryRun }}
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v6
+#
+#      - name: Publish
+#        env:
+#          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: |
+#          version="${{ needs.publish-central.outputs.release_version }}"
+#          body="${{ needs.publish-central.outputs.release_body }}"
+#
+#          gh release create $version -d -t "Release $version" -n "$body"

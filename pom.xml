@@ -51,8 +51,8 @@
 
 	<modules>
 		<module>webrtc-jni</module>
-		<module>webrtc</module>
-		<module>webrtc-examples</module>
+<!--		<module>webrtc</module>-->
+<!--		<module>webrtc-examples</module>-->
 	</modules>
 
 	<build>
@@ -218,7 +218,6 @@
 					<executions>
 						<execution>
 							<id>attach-sources</id>
-							<phase>package</phase>
 							<goals>
 								<goal>jar-no-fork</goal>
 							</goals>
