@@ -1,25 +1,26 @@
 name: Release
 
-inputs:
-  developmentVersion:
-    description: "Default version to use for new local working copy."
-    required: true
-    default: "X.Y.Z-SNAPSHOT"
-  dryRun:
-    description: "Dry run: build every platform and assemble the deployment bundle, but push no commits or tags and publish nothing."
-    required: false
-    type: boolean
-    default: false
-
 on:
-  push:
-#    branches:
-#      - main
-    paths:
-      - "**.cpp"
-      - "**.h"
-      - "**.java"
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      developmentVersion:
+        description: "Default version to use for new local working copy."
+        required: true
+        default: "X.Y.Z-SNAPSHOT"
+      dryRun:
+        description: "Dry run: build every platform and assemble the deployment bundle, but push no commits or tags and publish nothing."
+        required: false
+        type: boolean
+        default: false
+#  push:
+##    branches:
+##      - main
+#    paths:
+#      - "**.cpp"
+#      - "**.h"
+#      - "**.java"
+#  workflow_dispatch:
+
 
 env:
   WEBRTC_CHECKOUT_FOLDER: webrtc
