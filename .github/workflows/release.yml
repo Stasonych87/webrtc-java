@@ -14,12 +14,6 @@ on:
         type: boolean
         default: false
   push:
-    branches:
-      - fixes/test_package_sources
-    paths:
-      - "**.cpp"
-      - "**.h"
-      - "**.java"
   workflow_dispatch:
 
 
