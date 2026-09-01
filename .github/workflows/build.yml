@@ -46,72 +46,72 @@ jobs:
           maven-username: ${{ secrets.MAVEN_USERNAME }}
           maven-password: ${{ secrets.MAVEN_TOKEN }}
 
-  build-linux:
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - name: linux_arm
-            runs-on: ubuntu-22.04
-          - name: linux_arm64
-            runs-on: ubuntu-22.04
-          - name: linux_x86-64
-            runs-on: ubuntu-22.04
-        java: [17]
-    runs-on: ${{ matrix.platform.runs-on }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - id: prepare
-        name: Prepare build
-        uses: ./.github/actions/prepare-linux
-
-      - id: maven-build
-        name: Maven build
-        uses: ./.github/actions/build
-        with:
-          java-version: ${{ matrix.java }}
-          platform-name: ${{ matrix.platform.name }}
-          maven-username: ${{ secrets.MAVEN_USERNAME }}
-          maven-password: ${{ secrets.MAVEN_TOKEN }}
-
-  build-macos:
-    strategy:
-      max-parallel: 1
-      fail-fast: false
-      matrix:
-        platform:
-          - name: macos_x86-64
-            runs-on: [self-hosted,mac-office-arm64]
-          - name: macos_arm64
-            runs-on: [self-hosted,mac-office-arm64]
-        java: [17]
-    runs-on: ${{ matrix.platform.runs-on }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - id: prepare-build
-        name: Prepare build
-        uses: ./.github/actions/prepare-macos
-
-      - id: maven-build-arm64
-        name: Maven build - Apple Silicon
-        if: matrix.platform.name == 'macos_arm64'
-        uses: ./.github/actions/build
-        with:
-          java-version: ${{ matrix.java }}
-          platform-name: ${{ matrix.platform.name }}
-          maven-username: ${{ secrets.MAVEN_USERNAME }}
-          maven-password: ${{ secrets.MAVEN_TOKEN }}
-
-      - id: maven-build-x86_64
-        name: Maven build - Intel
-        if: matrix.platform.name == 'macos_x86-64'
-        uses: ./.github/actions/build-macos-x86_64
-        with:
-          java-version: ${{ matrix.java }}
-          platform-name: ${{ matrix.platform.name }}
-          maven-username: ${{ secrets.MAVEN_USERNAME }}
-          maven-password: ${{ secrets.MAVEN_TOKEN }}
+#  build-linux:
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        platform:
+#          - name: linux_arm
+#            runs-on: ubuntu-22.04
+#          - name: linux_arm64
+#            runs-on: ubuntu-22.04
+#          - name: linux_x86-64
+#            runs-on: ubuntu-22.04
+#        java: [17]
+#    runs-on: ${{ matrix.platform.runs-on }}
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v6
+#
+#      - id: prepare
+#        name: Prepare build
+#        uses: ./.github/actions/prepare-linux
+#
+#      - id: maven-build
+#        name: Maven build
+#        uses: ./.github/actions/build
+#        with:
+#          java-version: ${{ matrix.java }}
+#          platform-name: ${{ matrix.platform.name }}
+#          maven-username: ${{ secrets.MAVEN_USERNAME }}
+#          maven-password: ${{ secrets.MAVEN_TOKEN }}
+#
+#  build-macos:
+#    strategy:
+#      max-parallel: 1
+#      fail-fast: false
+#      matrix:
+#        platform:
+#          - name: macos_x86-64
+#            runs-on: [self-hosted,mac-office-arm64]
+#          - name: macos_arm64
+#            runs-on: [self-hosted,mac-office-arm64]
+#        java: [17]
+#    runs-on: ${{ matrix.platform.runs-on }}
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v6
+#
+#      - id: prepare-build
+#        name: Prepare build
+#        uses: ./.github/actions/prepare-macos
+#
+#      - id: maven-build-arm64
+#        name: Maven build - Apple Silicon
+#        if: matrix.platform.name == 'macos_arm64'
+#        uses: ./.github/actions/build
+#        with:
+#          java-version: ${{ matrix.java }}
+#          platform-name: ${{ matrix.platform.name }}
+#          maven-username: ${{ secrets.MAVEN_USERNAME }}
+#          maven-password: ${{ secrets.MAVEN_TOKEN }}
+#
+#      - id: maven-build-x86_64
+#        name: Maven build - Intel
+#        if: matrix.platform.name == 'macos_x86-64'
+#        uses: ./.github/actions/build-macos-x86_64
+#        with:
+#          java-version: ${{ matrix.java }}
+#          platform-name: ${{ matrix.platform.name }}
+#          maven-username: ${{ secrets.MAVEN_USERNAME }}
+#          maven-password: ${{ secrets.MAVEN_TOKEN }}
