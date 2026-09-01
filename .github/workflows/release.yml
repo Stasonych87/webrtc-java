@@ -97,8 +97,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          ref: fixes/test_package_sources
+#        with:
+#          ref: fixes/test_package_sources
       - run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
@@ -120,8 +120,8 @@ jobs:
 
       - name: Update development version
         uses: actions/checkout@v6
-        with:
-          ref: fixes/test_package_sources
+#        with:
+#          ref: fixes/test_package_sources
 
       # A dry run transforms the poms and writes release.properties, but creates no
       # commit and no tag, so there is nothing to amend or push below.
