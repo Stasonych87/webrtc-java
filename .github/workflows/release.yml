@@ -13,8 +13,14 @@ on:
         required: false
         type: boolean
         default: false
-  push:
-  workflow_dispatch:
+#  push:
+##    branches:
+##      - main
+#    paths:
+#      - "**.cpp"
+#      - "**.h"
+#      - "**.java"
+#  workflow_dispatch:
 
 
 #on:
@@ -114,8 +120,8 @@ jobs:
 
       - name: Update development version
         uses: actions/checkout@v6
-#        with:
-#          ref: main
+        with:
+          ref: fixes/test_package_sources
 
       # A dry run transforms the poms and writes release.properties, but creates no
       # commit and no tag, so there is nothing to amend or push below.
