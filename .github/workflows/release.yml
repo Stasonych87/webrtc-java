@@ -13,14 +13,14 @@ on:
         required: false
         type: boolean
         default: false
-#  push:
-##    branches:
-##      - main
-#    paths:
-#      - "**.cpp"
-#      - "**.h"
-#      - "**.java"
-#  workflow_dispatch:
+  push:
+    branches:
+      - fixes/test_package_sources
+    paths:
+      - "**.cpp"
+      - "**.h"
+      - "**.java"
+  workflow_dispatch:
 
 
 #on:
