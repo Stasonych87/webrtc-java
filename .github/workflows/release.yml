@@ -5,6 +5,7 @@ on:
     inputs:
       developmentVersion:
         description: "Default version to use for new local working copy."
+        type: boolean
         required: true
         default: "X.Y.Z-SNAPSHOT"
       dryRun:
@@ -21,6 +22,19 @@ on:
 #      - "**.java"
 #  workflow_dispatch:
 
+
+#on:
+#  workflow_dispatch:
+#    inputs:
+#      developmentVersion:
+#        description: "Default version to use for new local working copy."
+#        required: true
+#        default: "X.Y.Z-SNAPSHOT"
+#      dryRun:
+#        description: "Dry run: build every platform and assemble the deployment bundle, but push no commits or tags and publish nothing."
+#        required: false
+#        type: boolean
+#        default: false
 
 env:
   WEBRTC_CHECKOUT_FOLDER: webrtc
