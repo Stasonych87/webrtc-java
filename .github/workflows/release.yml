@@ -322,7 +322,7 @@ jobs:
 #            git checkout "$tag"
 #            version="${tag#v}"
 #          fi
-          version="${project.version"
+          version=$RELEASE_VERSION
           echo "Version to publish: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
@@ -351,18 +351,18 @@ jobs:
       # The webrtc module depends on its own native library jar for the host
       # platform. That dependency is normally installed by webrtc-jni, which is kept
       # out of the reactor here to avoid rebuilding the native libraries.
-      - name: Seed the local repository with the host native library
-        run: |
-          version="${{ steps.release-version.outputs.version }}"
-
-          mvn -B install:install-file \
-            -Dfile="natives/webrtc-java-$version-linux-x86_64.jar" \
-            -DgroupId=dev.onvoid.webrtc \
-            -DartifactId=webrtc-java \
-            -Dversion="$version" \
-            -Dclassifier=linux-x86_64 \
-            -Dpackaging=jar \
-            -DgeneratePom=false
+#      - name: Seed the local repository with the host native library
+#        run: |
+#          version="${{ steps.release-version.outputs.version }}"
+#
+#          mvn -B install:install-file \
+#            -Dfile="natives/webrtc-java-$version-linux-x86_64.jar" \
+#            -DgroupId=dev.onvoid.webrtc \
+#            -DartifactId=webrtc-java \
+#            -Dversion="$version" \
+#            -Dclassifier=linux-x86_64 \
+#            -Dpackaging=jar \
+#            -DgeneratePom=false
 
       # skipPublishing suppresses both the bundling and the upload, so a dry run
       # still builds, signs and attaches everything without anything leaving the
