@@ -136,12 +136,12 @@
 <!--		</profile>-->
 <!--	</profiles>-->
 
-	<dependencies>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>${project.artifactId}</artifactId>
-			<version>${project.version}</version>
-			<classifier>${platform.classifier}</classifier>
-		</dependency>
-	</dependencies>
+<!--	<dependencies>-->
+<!--		<dependency>-->
+<!--			<groupId>${project.groupId}</groupId>-->
+<!--			<artifactId>${project.artifactId}</artifactId>-->
+<!--			<version>${project.version}</version>-->
+<!--			<classifier>${platform.classifier}</classifier>-->
+<!--		</dependency>-->
+<!--	</dependencies>-->
 </project>
