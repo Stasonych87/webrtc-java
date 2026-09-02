@@ -314,15 +314,15 @@ jobs:
       - name: Determine the version to publish
         id: release-version
         run: |
-          if [ "${{ inputs.dryRun }}" == "true" ]; then
-            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
-          else
-            git fetch -a
-            tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-            git checkout "$tag"
-            version="${tag#v}"
-          fi
-
+#          if [ "${{ inputs.dryRun }}" == "true" ]; then
+#            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
+#          else
+#            git fetch -a
+#            tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+#            git checkout "$tag"
+#            version="${tag#v}"
+#          fi
+          version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
           echo "Version to publish: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
