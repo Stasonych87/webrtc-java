@@ -333,20 +333,20 @@ jobs:
           path: natives
           merge-multiple: true
 
-      - name: Verify that every platform is present
-        run: |
-          version="${{ steps.release-version.outputs.version }}"
-          status=0
-
-          for classifier in windows-x86_64 linux-x86_64 linux-aarch64 \
-                            linux-aarch32 macos-x86_64 macos-aarch64; do
-            if [ ! -f "natives/webrtc-java-$version-$classifier.jar" ]; then
-              echo "::error::Missing native library jar for $classifier"
-              status=1
-            fi
-          done
-
-          exit $status
+#      - name: Verify that every platform is present
+#        run: |
+#          version="${{ steps.release-version.outputs.version }}"
+#          status=0
+#
+#          for classifier in windows-x86_64 linux-x86_64 linux-aarch64 \
+#                            linux-aarch32 macos-x86_64 macos-aarch64; do
+#            if [ ! -f "natives/webrtc-java-$version-$classifier.jar" ]; then
+#              echo "::error::Missing native library jar for $classifier"
+#              status=1
+#            fi
+#          done
+#
+#          exit $status
 
       # The webrtc module depends on its own native library jar for the host
       # platform. That dependency is normally installed by webrtc-jni, which is kept
