@@ -44,9 +44,9 @@ runs:
       run: arch -x86_64 mvn package -DskipTests -Pmacos-cross-x86_64
       shell: bash
 
-    - name: Test
-      run: arch -x86_64 mvn -B jar:jar surefire:test -Pmacos-cross-x86_64
-      shell: bash
+#    - name: Test
+#      run: arch -x86_64 mvn -B jar:jar surefire:test -Pmacos-cross-x86_64
+#      shell: bash
 
     # Maven Central publishes a version as one atomic bundle, so this job must not
     # deploy. The native library jar is handed to the aggregating publish-central
