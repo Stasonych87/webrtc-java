@@ -322,7 +322,7 @@ jobs:
 #            git checkout "$tag"
 #            version="${tag#v}"
 #          fi
-          version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
+          version="${project.version"
           echo "Version to publish: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
