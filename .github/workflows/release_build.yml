@@ -39,7 +39,6 @@ on:
 env:
   WEBRTC_CHECKOUT_FOLDER: webrtc
   WEBRTC_INSTALL_FOLDER: webrtc/build
-  WEBRTC_RELEASE_VERSION: ""
 
 jobs:
   changelog:
@@ -97,6 +96,9 @@ jobs:
             runs-on: ubuntu-22.04
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
+      - name: Show dryRun input
+        run: echo "dryRun inputs = ${{ inputs.dryRun }}"
+
       - name: Checkout code
         uses: actions/checkout@v6
 #        with:
@@ -123,7 +125,7 @@ jobs:
       - name: Update development version
         uses: actions/checkout@v6
 #        with:
-#          ref: fixes/test_package_sources
+#          ref: main
 
       # A dry run transforms the poms and writes release.properties, but creates no
       # commit and no tag, so there is nothing to amend or push below.
@@ -159,11 +161,6 @@ jobs:
       - name: Display output values
         run: |
           printf "${{ join(steps.create-output.outputs.*, '\n') }}"
-
-      - name: Test store release version
-        run: |
-          echo "The value of version = ${{needs.prepare-release.outputs.release_build_version}}"
-          echo "The value of RELEASE_VERSION = $RELEASE_VERSION"
 
   build-windows:
     needs: prepare-release
@@ -205,23 +202,23 @@ jobs:
           java-version: ${{ matrix.java }}
           platform-name: ${{ matrix.platform.name }}
 
-#  build-linux:
-#    needs: prepare-release
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        platform:
-#          - name: linux_arm
-#            runs-on: ubuntu-22.04
-#          - name: linux_arm64
-#            runs-on: ubuntu-22.04
-#          - name: linux_x86-64
-#            runs-on: ubuntu-22.04
-#        java: [17]
-#    runs-on: ${{ matrix.platform.runs-on }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v6
+  build-linux:
+    needs: prepare-release
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: linux_arm
+            runs-on: ubuntu-22.04
+          - name: linux_arm64
+            runs-on: ubuntu-22.04
+          - name: linux_x86-64
+            runs-on: ubuntu-22.04
+        java: [17]
+    runs-on: ${{ matrix.platform.runs-on }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
 #        with:
 #          fetch-tags: true
 #
@@ -233,33 +230,34 @@ jobs:
 #          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
 #          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 #          git checkout $tag
-#
-#      - id: prepare-build
-#        name: Prepare release build
-#        uses: ./.github/actions/prepare-linux
-#
-#      - id: maven-build
-#        name: Maven build
-#        uses: ./.github/actions/release
-#        with:
-#          java-version: ${{ matrix.java }}
-#          platform-name: ${{ matrix.platform.name }}
 
-#  build-macos:
-#    needs: prepare-release
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        platform:
-#          - name: macos_x86-64
-#            runs-on: macos-14
-#          - name: macos_arm64
-#            runs-on: macos-14
-#        java: [17]
-#    runs-on: ${{ matrix.platform.runs-on }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v6
+      - id: prepare-build
+        name: Prepare release build
+        uses: ./.github/actions/prepare-linux
+
+      - id: maven-build
+        name: Maven build
+        uses: ./.github/actions/release
+        with:
+          java-version: ${{ matrix.java }}
+          platform-name: ${{ matrix.platform.name }}
+
+  build-macos:
+    needs: prepare-release
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        platform:
+          - name: macos_x86-64
+            runs-on: [self-hosted,mac-office-arm64]
+          - name: macos_arm64
+            runs-on: [self-hosted,mac-office-arm64]
+        java: [17]
+    runs-on: ${{ matrix.platform.runs-on }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
 #        with:
 #          fetch-tags: true
 #
@@ -271,26 +269,26 @@ jobs:
 #          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
 #          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 #          git checkout $tag
-#
-#      - id: prepare-build
-#        name: Prepare release build
-#        uses: ./.github/actions/prepare-macos
-#
-#      - id: maven-build-arm64
-#        name: Maven build - Apple Silicon
-#        if: matrix.platform.name == 'macos_arm64'
-#        uses: ./.github/actions/release
-#        with:
-#          java-version: ${{ matrix.java }}
-#          platform-name: ${{ matrix.platform.name }}
-#
-#      - id: maven-build-x86_64
-#        name: Maven build - Intel
-#        if: matrix.platform.name == 'macos_x86-64'
-#        uses: ./.github/actions/release-macos-x86_64
-#        with:
-#          java-version: ${{ matrix.java }}
-#          platform-name: ${{ matrix.platform.name }}
+
+      - id: prepare-build
+        name: Prepare release build
+        uses: ./.github/actions/prepare-macos
+
+      - id: maven-build-arm64
+        name: Maven build - Apple Silicon
+        if: matrix.platform.name == 'macos_arm64'
+        uses: ./.github/actions/release
+        with:
+          java-version: ${{ matrix.java }}
+          platform-name: ${{ matrix.platform.name }}
+
+      - id: maven-build-x86_64
+        name: Maven build - Intel
+        if: matrix.platform.name == 'macos_x86-64'
+        uses: ./.github/actions/release-macos-x86_64
+        with:
+          java-version: ${{ matrix.java }}
+          platform-name: ${{ matrix.platform.name }}
 
   publish-central:
     name: Publish to Maven Central
@@ -354,36 +352,36 @@ jobs:
           path: natives
           merge-multiple: true
 
-#      - name: Verify that every platform is present
-#        run: |
-#          version="${{ steps.release-version.outputs.version }}"
-#          status=0
-#
-#          for classifier in windows-x86_64 linux-x86_64 linux-aarch64 \
-#                            linux-aarch32 macos-x86_64 macos-aarch64; do
-#            if [ ! -f "natives/webrtc-java-$version-$classifier.jar" ]; then
-#              echo "::error::Missing native library jar for $classifier"
-#              status=1
-#            fi
-#          done
-#
-#          exit $status
+      - name: Verify that every platform is present
+        run: |
+          version="${{ steps.release-version.outputs.version }}"
+          status=0
+
+          for classifier in windows-x86_64 linux-x86_64 linux-aarch64 \
+                            linux-aarch32 macos-x86_64 macos-aarch64; do
+            if [ ! -f "natives/webrtc-java-$version-$classifier.jar" ]; then
+              echo "::error::Missing native library jar for $classifier"
+              status=1
+            fi
+          done
+
+          exit $status
 
       # The webrtc module depends on its own native library jar for the host
       # platform. That dependency is normally installed by webrtc-jni, which is kept
       # out of the reactor here to avoid rebuilding the native libraries.
-#      - name: Seed the local repository with the host native library
-#        run: |
-#          version="${{ steps.release-version.outputs.version }}"
-#
-#          mvn -B install:install-file \
-#            -Dfile="natives/webrtc-java-$version-linux-x86_64.jar" \
-#            -DgroupId=dev.onvoid.webrtc \
-#            -DartifactId=webrtc-java \
-#            -Dversion="$version" \
-#            -Dclassifier=linux-x86_64 \
-#            -Dpackaging=jar \
-#            -DgeneratePom=false
+      - name: Seed the local repository with the host native library
+        run: |
+          version="${{ steps.release-version.outputs.version }}"
+
+          mvn -B install:install-file \
+            -Dfile="natives/webrtc-java-$version-linux-x86_64.jar" \
+            -DgroupId=dev.onvoid.webrtc \
+            -DartifactId=webrtc-java \
+            -Dversion="$version" \
+            -Dclassifier=linux-x86_64 \
+            -Dpackaging=jar \
+            -DgeneratePom=false
 
       # skipPublishing suppresses both the bundling and the upload, so a dry run
       # still builds, signs and attaches everything without anything leaving the
@@ -391,18 +389,18 @@ jobs:
       # a placeholder during a dry run: should the upload ever happen regardless, it
       # fails on authentication instead of publishing a release. Signing does run, so
       # the GPG passphrase stays intact.
-#      - name: Deploy
-#        env:
-#          MAVEN_USERNAME: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_USERNAME }}
-#          MAVEN_TOKEN: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_TOKEN }}
-#          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-#        run: >
-#          mvn -B deploy -pl .,webrtc -Prelease -DskipTests
-#          -Dnatives.dir="$PWD/natives"
-#          -DskipPublishing=${{ inputs.dryRun }}
+      - name: Deploy
+        env:
+          MAVEN_USERNAME: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_USERNAME }}
+          MAVEN_TOKEN: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: >
+          mvn -B deploy -pl .,webrtc -Prelease -DskipTests
+          -Dnatives.dir="$PWD/natives"
+          -DskipPublishing=${{ inputs.dryRun }}
 
       - name: Summarize what would have been published
-#        if: ${{ inputs.dryRun }}
+        if: ${{ inputs.dryRun }}
         run: |
           {
             echo "## Dry run — nothing was published"
