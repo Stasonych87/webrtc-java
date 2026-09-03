@@ -39,7 +39,7 @@ on:
 env:
   WEBRTC_CHECKOUT_FOLDER: webrtc
   WEBRTC_INSTALL_FOLDER: webrtc/build
-  WEBRTC_RELEASE-VERSION: ""
+  WEBRTC_RELEASE_VERSION: ""
 
 jobs:
   changelog:
@@ -135,7 +135,7 @@ jobs:
 
           # Get the release version from the release.properties file
           RELEASE_VERSION=$(grep "project.rel.dev.onvoid.webrtc\\\:webrtc-java=" release.properties 2>/dev/null | cut -d'=' -f2 || true)
-          ${{ env.WEBRTC_RELEASE-VERSION }} = $RELEASE_VERSION
+          env.WEBRTC_RELEASE_VERSION = $RELEASE_VERSION
           echo "Extracted release version from release.properties: ${RELEASE_VERSION:-<none>}"
           echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
           echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
@@ -323,8 +323,8 @@ jobs:
       - name: Determine the version to publish
         id: release-version
         run: |
-          echo "Version to publish: ${{ env.WEBRTC_RELEASE-VERSION}}"
-          echo "version=${{ env.WEBRTC_RELEASE-VERSION}}" >> "$GITHUB_OUTPUT"
+          echo "Version to publish: ${{ env.WEBRTC_RELEASE_VERSION}}"
+          echo "version=${{ env.WEBRTC_RELEASE_VERSION}}" >> "$GITHUB_OUTPUT"
 
 #          if [ "${{ inputs.dryRun }}" == "true" ]; then
 #            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
