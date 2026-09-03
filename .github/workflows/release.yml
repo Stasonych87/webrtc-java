@@ -88,6 +88,7 @@ jobs:
     outputs:
       release_body: ${{ needs.changelog.outputs.release_body }}
       release_version: ${{ needs.changelog.outputs.release_version }}
+      release_build_version: ${{ needs.changelog.outputs.version }}
     strategy:
       fail-fast: false
       matrix:
@@ -135,7 +136,6 @@ jobs:
 
           # Get the release version from the release.properties file
           RELEASE_VERSION=$(grep "project.rel.dev.onvoid.webrtc\\\:webrtc-java=" release.properties 2>/dev/null | cut -d'=' -f2 || true)
-          env.WEBRTC_RELEASE_VERSION = $RELEASE_VERSION
           echo "Extracted release version from release.properties: ${RELEASE_VERSION:-<none>}"
           echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
           echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
@@ -323,8 +323,8 @@ jobs:
       - name: Determine the version to publish
         id: release-version
         run: |
-          echo "Version to publish: ${{ env.WEBRTC_RELEASE_VERSION}}"
-          echo "version=${{ env.WEBRTC_RELEASE_VERSION}}" >> "$GITHUB_OUTPUT"
+          echo "Version to publish:  ${{needs.prepare-release.outputs.release_build_version}}"
+          echo "version=${{needs.prepare-release.outputs.release_build_version}}" >> "$GITHUB_OUTPUT"
 
 #          if [ "${{ inputs.dryRun }}" == "true" ]; then
 #            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
