@@ -157,6 +157,10 @@ jobs:
 #          git push
 #          git push --tags
 
+      - name: Display output values
+        run: |
+          printf "${{ join(steps.create-output.outputs.*, '\n') }}"
+
       - name: Test store release version
         run: |
           echo "The value of version = ${{needs.prepare-release.outputs.release_build_version}}"
