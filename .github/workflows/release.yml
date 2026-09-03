@@ -321,7 +321,6 @@ jobs:
         id: release-version
         run: |
           echo "Version to publish: $version"
-#          RELEASE_VERSION=${{ steps.prepare-release-job.env.version }}
           echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
 
 #          if [ "${{ inputs.dryRun }}" == "true" ]; then
