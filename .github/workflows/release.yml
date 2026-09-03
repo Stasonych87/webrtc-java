@@ -316,7 +316,7 @@ jobs:
       - name: Determine the version to publish
         id: release-version
         run: |
-          RELEASE_VERSION=${{ steps.prepare-release-job.outputs.version }}
+          RELEASE_VERSION=${{ steps.prepare-release-job.env.version }}
           echo "Version to publish: $RELEASE_VERSION"
           echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
 
