@@ -88,7 +88,7 @@ jobs:
     outputs:
       release_body: ${{ needs.changelog.outputs.release_body }}
       release_version: ${{ needs.changelog.outputs.release_version }}
-      release_build_version: ${{ needs.changelog.outputs.version }}
+      release_build_version: ${{ steps.prepare-release-step.outputs.version }}
     strategy:
       fail-fast: false
       matrix:
