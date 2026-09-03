@@ -137,11 +137,9 @@ jobs:
           # Get the release version from the release.properties file
           RELEASE_VERSION=$(grep "project.rel.dev.onvoid.webrtc\\\:webrtc-java=" release.properties 2>/dev/null | cut -d'=' -f2 || true)
           echo "Extracted release version from release.properties: ${RELEASE_VERSION:-<none>}"
-          echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
           echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
           echo "version=$RELEASE_VERSION"
-          echo "write version value to outputs version=$version"
-          echo "writed to release_build_version = ${{ steps.prepare-release-step.outputs.version }}"
+        
 
 #      - name: Push release commit and tag
 #        if: ${{ !inputs.dryRun }}
