@@ -50,9 +50,9 @@
 	</properties>
 
 	<modules>
-<!--		<module>webrtc-jni</module>-->
+		<module>webrtc-jni</module>
 		<module>webrtc</module>
-<!--		<module>webrtc-examples</module>-->
+		<module>webrtc-examples</module>
 	</modules>
 
 	<build>
