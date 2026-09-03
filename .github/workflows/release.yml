@@ -39,6 +39,7 @@ on:
 env:
   WEBRTC_CHECKOUT_FOLDER: webrtc
   WEBRTC_INSTALL_FOLDER: webrtc/build
+  WEBRTC_RELEASE-VERSION: ""
 
 jobs:
   changelog:
@@ -134,6 +135,7 @@ jobs:
 
           # Get the release version from the release.properties file
           RELEASE_VERSION=$(grep "project.rel.dev.onvoid.webrtc\\\:webrtc-java=" release.properties 2>/dev/null | cut -d'=' -f2 || true)
+          ${{ env.WEBRTC_INSTALL_FOLDER }} = $$RELEASE_VERSION
           echo "Extracted release version from release.properties: ${RELEASE_VERSION:-<none>}"
           echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
           echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
@@ -156,7 +158,7 @@ jobs:
       - name: Test store release version
         run: |
           echo "The value of version = $version"
-          echo "The value of $RELEASE_VERSION = $RELEASE_VERSION"
+          echo "The value of RELEASE_VERSION = $RELEASE_VERSION"
 
   build-windows:
     needs: prepare-release
@@ -321,8 +323,8 @@ jobs:
       - name: Determine the version to publish
         id: release-version
         run: |
-          echo "Version to publish: $RELEASE_VERSION"
-          echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version to publish: ${{ env.WEBRTC_INSTALL_FOLDER }}"
+          echo "version=${{ env.WEBRTC_INSTALL_FOLDER }}" >> "$GITHUB_OUTPUT"
 
 #          if [ "${{ inputs.dryRun }}" == "true" ]; then
 #            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
@@ -391,7 +393,7 @@ jobs:
 #          -DskipPublishing=${{ inputs.dryRun }}
 
       - name: Summarize what would have been published
-        if: ${{ inputs.dryRun }}
+#        if: ${{ inputs.dryRun }}
         run: |
           {
             echo "## Dry run — nothing was published"
@@ -405,7 +407,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the deployment bundle for inspection
-        if: ${{ inputs.dryRun }}
+#        if: ${{ inputs.dryRun }}
         uses: actions/upload-artifact@v4
         with:
           name: deployment-bundle-dry-run
