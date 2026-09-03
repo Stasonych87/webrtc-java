@@ -126,7 +126,7 @@ jobs:
       # A dry run transforms the poms and writes release.properties, but creates no
       # commit and no tag, so there is nothing to amend or push below.
       - name: Prepare release
-        id: prepare-release-job
+        id: prepare-release-step
         run: |
           mvn release:prepare -DskipTests -DpushChanges=false \
             -DdryRun=${{ inputs.dryRun }} \
@@ -153,6 +153,10 @@ jobs:
 #          git push
 #          git push --tags
 
+      - name: Test store release version
+        run: |
+          echo "The value of MY_ENV_VAR is $version"
+
   build-windows:
     needs: prepare-release
     outputs:
@@ -169,8 +173,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          fetch-tags: true
+#        with:
+#          fetch-tags: true
 
 #      - name: Get tag from current branch
 #        id: tag-selector
@@ -316,8 +320,8 @@ jobs:
       - name: Determine the version to publish
         id: release-version
         run: |
-          RELEASE_VERSION=${{ steps.prepare-release-job.env.version }}
-          echo "Version to publish: $RELEASE_VERSION"
+          echo "Version to publish: $version"
+#          RELEASE_VERSION=${{ steps.prepare-release-job.env.version }}
           echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
 
 #          if [ "${{ inputs.dryRun }}" == "true" ]; then
