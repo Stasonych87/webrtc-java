@@ -297,13 +297,17 @@ jobs:
   publish-central:
     name: Publish to Maven Central
 #    needs: [build-windows, build-linux, build-macos]
-    needs: [build-windows]
+    needs: [prepare-release, build-windows]
     outputs:
       release_body: ${{ needs.build-windows.outputs.release_body }}
       release_version: ${{ needs.build-windows.outputs.release_version }}
     runs-on: ubuntu-22.04
 
     steps:
+      - name: Display output values
+        run: |
+          printf "${{ join(steps.create-output.outputs.*, '\n') }}"
+
       - name: Checkout code
         uses: actions/checkout@v6
 #        with:
