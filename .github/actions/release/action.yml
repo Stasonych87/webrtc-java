@@ -49,19 +49,19 @@ runs:
         fi
       shell: bash
 
-#    - name: Test
-#      if: ${{ inputs.platform-name != 'linux_arm' && inputs.platform-name != 'linux_arm64' }}
-#      run: mvn -B jar:jar surefire:test
-#      shell: bash
+    - name: Test
+      if: ${{ inputs.platform-name != 'linux_arm' && inputs.platform-name != 'linux_arm64' }}
+      run: mvn -B jar:jar surefire:test
+      shell: bash
 
     # Maven Central publishes a version as one atomic bundle, so this job must not
     # deploy. The native library jar is handed to the aggregating publish-central
     # job instead, which attaches every platform to a single deployment.
-#    - name: Upload native library jar
-#      uses: actions/upload-artifact@v4
-#      with:
-#        name: natives-${{ inputs.platform-name }}
-#        path: webrtc-jni/target/webrtc-java-*.jar
-#        if-no-files-found: error
-#        retention-days: 7
-#        overwrite: true
+    - name: Upload native library jar
+      uses: actions/upload-artifact@v4
+      with:
+        name: natives-${{ inputs.platform-name }}
+        path: webrtc-jni/target/webrtc-java-*.jar
+        if-no-files-found: error
+        retention-days: 7
+        overwrite: true
