@@ -143,11 +143,11 @@ jobs:
           echo "version=$RELEASE_VERSION"
         
 
-#      - name: Push release commit and tag
-#        if: ${{ !inputs.dryRun }}
-#        run: |
-#          # Update versions.ts file
-#          echo "Updating versions.ts with release version: $RELEASE_VERSION and development version: ${{ github.event.inputs.developmentVersion }}"
+      - name: Push release commit and tag
+        if: ${{ !inputs.dryRun }}
+        run: |
+          # Update versions.ts file
+          echo "Updating versions.ts with release version: $RELEASE_VERSION and development version: ${{ github.event.inputs.developmentVersion }}"
 #          sed -i "s/VERSION: '.*'/VERSION: '$RELEASE_VERSION'/g" docs/.vitepress/versions.ts
 #          sed -i "s/VERSION_SNAPSHOT: '.*'/VERSION_SNAPSHOT: '${{ github.event.inputs.developmentVersion }}'/g" docs/.vitepress/versions.ts
 #
@@ -363,7 +363,7 @@ jobs:
           
           for classifier in windows-x86_64 linux-x86_64 linux-aarch64 \
                             linux-aarch32 macos-x86_64 macos-aarch64; do
-            if [ ! -f "natives/webrtc-java-$version-$classifier.jar" ]; then
+            if [ ! -f "./natives/webrtc-java-$version-$classifier.jar" ]; then
               echo "::error::Missing native library jar for $classifier"
             fi
           done
