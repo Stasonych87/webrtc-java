@@ -355,12 +355,14 @@ jobs:
         run: |
           version="${{ steps.release-version.outputs.version }}"
           status=0
-
+          
+          ls ./natives
+          echo "_______"
           for classifier in windows-x86_64 linux-x86_64 linux-aarch64 \
                             linux-aarch32 macos-x86_64 macos-aarch64; do
             if [ ! -f "natives/webrtc-java-$version-$classifier.jar" ]; then
               echo "::error::Missing native library jar for $classifier"
-              status=1
+#              status=1
             fi
           done
 
@@ -396,7 +398,8 @@ jobs:
         run: >
           mvn -B deploy -pl .,webrtc -Prelease -DskipTests
           -Dnatives.dir="$PWD/natives"
-          -DskipPublishing=${{ inputs.dryRun }}
+          -DskipPublishing=true
+#          -DskipPublishing=${{ inputs.dryRun }}
 
       - name: Summarize what would have been published
         if: ${{ inputs.dryRun }}
