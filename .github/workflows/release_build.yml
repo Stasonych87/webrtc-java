@@ -127,6 +127,11 @@ jobs:
 #        with:
 #          ref: main
 
+      - name: View prepare params
+        run: |
+          echo "dryRun=${{ inputs.dryRun }}"
+          echo "developmentVersion=${{ github.event.inputs.developmentVersion }}"
+
       # A dry run transforms the poms and writes release.properties, but creates no
       # commit and no tag, so there is nothing to amend or push below.
       - name: Prepare release
