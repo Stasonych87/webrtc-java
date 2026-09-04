@@ -351,13 +351,16 @@ jobs:
           path: natives
           merge-multiple: true
 
+      - name: Show natives dirs
+        run: |
+          ls ./natives
+          echo "_______"
+
       - name: Verify that every platform is present
         run: |
           version="${{ steps.release-version.outputs.version }}"
           status=0
           
-          ls ./natives
-          echo "_______"
           for classifier in windows-x86_64 linux-x86_64 linux-aarch64 \
                             linux-aarch32 macos-x86_64 macos-aarch64; do
             if [ ! -f "natives/webrtc-java-$version-$classifier.jar" ]; then
