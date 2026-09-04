@@ -365,7 +365,6 @@ jobs:
                             linux-aarch32 macos-x86_64 macos-aarch64; do
             if [ ! -f "natives/webrtc-java-$version-$classifier.jar" ]; then
               echo "::error::Missing native library jar for $classifier"
-#              status=1
             fi
           done
 
