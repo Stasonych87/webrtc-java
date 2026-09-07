@@ -178,12 +178,9 @@ jobs:
         run: |
           printf "${{ join(steps.create-output.outputs.*, '\n') }}"
 
-  exit-process:
-    runs-on: ${{ matrix.platform.runs-on }}
-    steps:
       - name: Exit workflow
         run: |
-          exit 1
+          exit 1        
 
   build-windows:
     needs: prepare-release
