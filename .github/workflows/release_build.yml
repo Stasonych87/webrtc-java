@@ -137,6 +137,9 @@ jobs:
       - name: Prepare release
         id: prepare-release-step
         run: |
+          mvn release:prepare -DskipTests -DpushChanges=false \
+            -DdryRun=true \
+            -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
 
           # Get the release version from the release.properties file
           RELEASE_VERSION=$(grep "project.rel.dev.onvoid.webrtc\\\:webrtc-java=" release.properties 2>/dev/null | cut -d'=' -f2 || true)
