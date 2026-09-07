@@ -137,15 +137,17 @@ jobs:
       - name: Prepare release
         id: prepare-release-step
         run: |
-          mvn release:prepare -DskipTests -DignoreSnapshots -DpushChanges=false \
-            -DdryRun=false -Dresume=false\
+          mvn release:prepare -DskipTests -DpushChanges=false \
+            -DdryRun=false \
             -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
 
           # Get the release version from the release.properties file
           RELEASE_VERSION=$(grep "project.rel.dev.onvoid.webrtc\\\:webrtc-java=" release.properties 2>/dev/null | cut -d'=' -f2 || true)
           echo "Extracted release version from release.properties: ${RELEASE_VERSION:-<none>}"
           echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
-          echo "version=$RELEASE_VERSION"
+          echo "version=$RELEASE_VERSION" 
+          echo "release_version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "release_version=$RELEASE_VERSION"
 #          mvn release:prepare -DskipTests -DpushChanges=false \
 #            -DdryRun=${{ inputs.dryRun }} \
 #            -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
@@ -175,6 +177,13 @@ jobs:
       - name: Display output values
         run: |
           printf "${{ join(steps.create-output.outputs.*, '\n') }}"
+
+  exit-process:
+    runs-on: ${{ matrix.platform.runs-on }}
+    steps:
+      - name: Exit workflow
+        run: |
+          exit 1
 
   build-windows:
     needs: prepare-release
