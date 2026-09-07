@@ -158,7 +158,7 @@ jobs:
         
 
       - name: View release info
-        if: ${{ inputs.dryRun }}
+        if: ${{ !inputs.dryRun }}
         run: |
           # Update versions.ts file
           echo "Updating versions.ts with release version: $RELEASE_VERSION and development version: ${{ github.event.inputs.developmentVersion }}"
@@ -192,18 +192,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-#        with:
-#          fetch-tags: true
+        with:
+          fetch-tags: true
 
-#      - name: Get tag from current branch
-#        id: tag-selector
-#        if: ${{ !inputs.dryRun }}
-#        shell: bash
-#        run: |
-#          git fetch -a
-#          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-#          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-#          git checkout $tag
+      - name: Get tag from current branch
+        id: tag-selector
+        if: ${{ !inputs.dryRun }}
+        shell: bash
+        run: |
+          git fetch -a
+          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git checkout $tag
 
       - id: prepare
         name: Prepare release build
@@ -233,17 +233,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-#        with:
-#          fetch-tags: true
+        with:
+          fetch-tags: true
 
-#      - name: Get tag from current branch
-#        id: tag-selector
-#        if: ${{ !inputs.dryRun }}
-#        run: |
-#          git fetch -a
-#          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-#          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-#          git checkout $tag
+      - name: Get tag from current branch
+        id: tag-selector
+        if: ${{ !inputs.dryRun }}
+        run: |
+          git fetch -a
+          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git checkout $tag
 
       - id: prepare-build
         name: Prepare release build
@@ -272,17 +272,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-#        with:
-#          fetch-tags: true
-#
-#      - name: Get tag from current branch
-#        id: tag-selector
-#        if: ${{ !inputs.dryRun }}
-#        run: |
-#          git fetch -a
-#          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-#          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-#          git checkout $tag
+        with:
+          fetch-tags: true
+
+      - name: Get tag from current branch
+        id: tag-selector
+        if: ${{ !inputs.dryRun }}
+        run: |
+          git fetch -a
+          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git checkout $tag
 
       - id: prepare-build
         name: Prepare release build
@@ -319,8 +319,8 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v6
-#        with:
-#          fetch-tags: true
+        with:
+          fetch-tags: true
 
       - name: Set up Maven cache
         uses: actions/cache@v4
