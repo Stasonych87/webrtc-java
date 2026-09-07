@@ -138,7 +138,7 @@ jobs:
         id: prepare-release-step
         run: |
           mvn release:prepare -DskipTests -DignoreSnapshots -DpushChanges=false \
-            -DdryRun=true \
+            -DdryRun=true -Dresume=false\
             -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
 
           # Get the release version from the release.properties file
