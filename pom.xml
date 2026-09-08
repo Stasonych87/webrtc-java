@@ -65,7 +65,7 @@
 		<timestamp>${maven.build.timestamp}</timestamp>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
-		<gitlab.token>""</gitlab.token>
+<!--		<gitlab.token>""</gitlab.token>-->
 	</properties>
 
 	<modules>

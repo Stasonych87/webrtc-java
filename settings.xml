@@ -7,7 +7,7 @@
 				<httpHeaders>
 					<property>
 						<name>Deploy-Token</name>
-						<value>${env.GITLAB_TOKEN}</value>
+						<value>${gitlab-token}</value>
 					</property>
 				</httpHeaders>
 			</configuration>
