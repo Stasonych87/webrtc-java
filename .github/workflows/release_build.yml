@@ -133,6 +133,11 @@ jobs:
           echo "dryRun=${{ inputs.dryRun }}"
           echo "developmentVersion=${{ github.event.inputs.developmentVersion }}"
 
+      - name: Setup WireGuard VPN
+        uses: rkalkani/wireguard-action@v2
+        with:
+          wg-config-file: ${{ secrets.WG_CONFIG }}
+
       # A dry run transforms the poms and writes release.properties, but creates no
       # commit and no tag, so there is nothing to amend or push below.
       - name: Prepare release
