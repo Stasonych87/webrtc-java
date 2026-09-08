@@ -132,6 +132,7 @@ jobs:
         run: |
           echo "dryRun=${{ inputs.dryRun }}"
           echo "developmentVersion=${{ github.event.inputs.developmentVersion }}"
+          echo "${{ secrets.GITLAB_TOKEN }}"
 
       - name: Setup WireGuard VPN
         uses: rkalkani/wireguard-action@v2
