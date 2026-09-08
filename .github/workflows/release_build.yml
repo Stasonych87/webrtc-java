@@ -148,7 +148,7 @@ jobs:
       - name: Prepare release
         id: prepare-release-step
         run: |
-          mvn release:prepare -Dgitlab-token=$TOKEN -s settings.xml -DskipTests \
+          mvn release:prepare -Dgitlab-token=${{ secrets.GITLAB_TOKEN }} -s settings.xml -DskipTests \
             -DdryRun=false -DpushChanges=false \
             -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
 
@@ -428,7 +428,7 @@ jobs:
         run: |
           version="${{ steps.release-version.outputs.version }}"
 
-          mvn -B install:install-file -Dgitlab-token=$TOKEN \
+          mvn -B install:install-file -Dgitlab-token=${{ secrets.GITLAB_TOKEN }} \
             -s settings.xml \
             -Dfile="natives/webrtc-java-$version-linux-x86_64.jar" \
             -DgroupId=dev.onvoid.webrtc \
@@ -450,7 +450,7 @@ jobs:
           MAVEN_TOKEN: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
         run: >
-          mvn -B deploy -pl .,webrtc -Prelease -DskipTests -Dgitlab-token=$TOKEN
+          mvn -B deploy -pl .,webrtc -Prelease -DskipTests -Dgitlab-token=${{ secrets.GITLAB_TOKEN }}
           -Dnatives.dir="$PWD/natives"
           -DskipPublishing=true -s settings.xml
 #          mvn -B deploy -pl .,webrtc -Prelease -DskipTests
