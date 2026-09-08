@@ -31,17 +31,42 @@
 		</license>
 	</licenses>
 
-	<issueManagement>
-		<system>GitHub</system>
-		<url>https://github.com/devopvoid/webrtc-java/issues</url>
-	</issueManagement>
+<!--	<issueManagement>-->
+<!--		<system>GitHub</system>-->
+<!--		<url>https://github.com/devopvoid/webrtc-java/issues</url>-->
+<!--	</issueManagement>-->
 
-	<scm>
-		<connection>scm:git:git://github.com/devopvoid/webrtc-java.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/devopvoid/webrtc-java.git</developerConnection>
-		<url>https://github.com/devopvoid/webrtc-java/tree/main</url>
-		<tag>v0.16.1</tag>
-	</scm>
+<!--	<scm>-->
+<!--		<connection>scm:git:git://github.com/devopvoid/webrtc-java.git</connection>-->
+<!--		<developerConnection>scm:git:ssh://git@github.com/devopvoid/webrtc-java.git</developerConnection>-->
+<!--		<url>https://github.com/devopvoid/webrtc-java/tree/main</url>-->
+<!--		<tag>HEAD</tag>-->
+<!--	</scm>-->
+
+	<repositories>
+		<repository>
+			<id>gitlab-maven</id>
+			<url>https://gitlab.1c-connect.com/api/v4/projects/120/packages/maven</url>
+		</repository>
+	</repositories>
+
+	<distributionManagement>
+		<repository>
+			<id>gitlab-maven</id>
+			<url>https://gitlab.1c-connect.com/api/v4/projects/120/packages/maven</url>
+		</repository>
+		<snapshotRepository>
+			<id>gitlab-maven</id>
+			<url>https://gitlab.1c-connect.com/api/v4/projects/120/packages/maven</url>
+		</snapshotRepository>
+	</distributionManagement>
+
+<!--	<scm>-->
+<!--		<connection>scm:git:git://github.com/devopvoid/webrtc-java.git</connection>-->
+<!--		<developerConnection>scm:git:ssh://git@github.com/devopvoid/webrtc-java.git</developerConnection>-->
+<!--		<url>https://github.com/devopvoid/webrtc-java/tree/main</url>-->
+<!--		<tag>v0.16.1</tag>-->
+<!--	</scm>-->
 
 	<properties>
 		<timestamp>${maven.build.timestamp}</timestamp>
