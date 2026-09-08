@@ -209,7 +209,7 @@ if(APPLE)
     target_compile_definitions(${PROJECT_NAME} PUBLIC WEBRTC_MAC WEBRTC_POSIX WEBRTC_USE_H264)
     target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreAudio" "-framework CoreVideo" "-framework ScreenCaptureKit" "-framework AudioToolbox" "-framework IOSurface" "-framework ApplicationServices" "-framework AppKit")
 elseif(LINUX)
-    # Find DBus
+    # Find DBus (headers only: the JNI code opens libdbus at runtime)
     find_package(PkgConfig QUIET REQUIRED) # Include functions provided by PkgConfig module.
     pkg_check_modules(DBUS REQUIRED dbus-1)
     # Wayland/PipeWire desktop capture: libwebrtc.a references gio, gbm and libdrm
@@ -229,9 +229,17 @@ elseif(LINUX)
     # libpipewire dev package.)
     target_include_directories(${PROJECT_NAME} PUBLIC ${DBUS_INCLUDE_DIRS} ${GIO_INCLUDE_DIRS})
     target_compile_definitions(${PROJECT_NAME} PUBLIC WEBRTC_LINUX WEBRTC_POSIX WEBRTC_USE_H264 WEBRTC_USE_X11 WEBRTC_USE_PIPEWIRE WEBRTC_USE_GIO)
-    target_link_libraries(${PROJECT_NAME} X11 Xext Xfixes Xdamage Xtst Xrandr Xcomposite dbus-1 ${GIO_LIBRARIES} ${GBM_LIBRARIES} ${DRM_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} X11 Xext Xfixes Xdamage Xtst Xrandr Xcomposite ${GIO_LIBRARIES} ${GBM_LIBRARIES} ${DRM_LIBRARIES})
 elseif(WIN32)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC WEBRTC_WIN WEBRTC_USE_H264 NOMINMAX WIN32_LEAN_AND_MEAN NDEBUG)
+    # RTC_ENABLE_WIN_WGC must match the gn build: webrtc.lib is compiled with gn's
+    # default rtc_enable_win_wgc=true (webrtc.gni: "rtc_enable_win_wgc = is_win"),
+    # and DesktopCaptureOptions has members guarded by that define. Compiling the
+    # JNI wrapper without it changes the class layout and size (64 vs 80 bytes as
+    # of branch-heads/7977) — the out-of-line CreateDefault()/copy constructor in
+    # the lib then overflow the wrapper's smaller stack slot and every member
+    # after the guarded block is read at wrong offsets, silently breaking desktop
+    # capture (same ABI bug WEBRTC_USE_X11 fixed on Linux).
+    target_compile_definitions(${PROJECT_NAME} PUBLIC WEBRTC_WIN WEBRTC_USE_H264 NOMINMAX WIN32_LEAN_AND_MEAN NDEBUG RTC_ENABLE_WIN_WGC)
     target_link_libraries(${PROJECT_NAME} D3D11 DXGI user32 gdi32 iphlpapi dmoguids msdmo secur32 strmiids winmm wmcodecdspuuid ws2_32)
 endif()
 
@@ -255,6 +263,17 @@ if(NOT EXISTS "${WEBRTC_SRC_DIR}/depot_tools")
 endif()
 
 set(ENV{PATH} "${WEBRTC_SRC_DIR}/depot_tools${PATH_SEP}$ENV{PATH}")
+
+# Since depot_tools d4e95894 the fetch wrapper runs the hermetic Python that
+# only exists after the bootstrap, which fetch used to perform itself. The
+# Windows wrapper still bootstraps on its own.
+if(UNIX)
+    message(STATUS "WebRTC: bootstrap depot tools")
+    execute_command(
+        COMMAND ensure_bootstrap
+        WORKING_DIRECTORY "${WEBRTC_SRC_DIR}/depot_tools"
+    )
+endif()
 
 file(MAKE_DIRECTORY ${WEBRTC_DIR})
 

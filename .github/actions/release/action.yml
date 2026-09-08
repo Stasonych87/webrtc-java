@@ -43,14 +43,16 @@ runs:
         if [ "${{ inputs.platform-name }}" == "linux_arm" ]; then
           mvn package -Dgitlab-token=${{ env.GITLAB_TOKEN }} -s settings.xml -DskipTests -Plinux-aarch32
         elif [ "${{ inputs.platform-name }}" == "linux_arm64" ]; then
-          mvn package -Dgitlab-token=${{ env.GITLAB_TOKEN }} -s settings.xml -DskipTests -Plinux-aarch64
+          mvn package -Dgitlab-token=${{ env.GITLAB_TOKEN }} -s settings.xml  -DskipTests -Plinux-aarch64
+        elif [ "${{ inputs.platform-name }}" == "windows_arm64" ]; then
+          mvn package -Dgitlab-token=${{ env.GITLAB_TOKEN }} -s settings.xml  -DskipTests -Pwindows-aarch64
         else
           mvn package -Dgitlab-token=${{ env.GITLAB_TOKEN }} -s settings.xml -DskipTests
         fi
       shell: bash
 
     - name: Test
-      if: ${{ inputs.platform-name != 'linux_arm' && inputs.platform-name != 'linux_arm64' }}
+      if: ${{ inputs.platform-name != 'linux_arm' && inputs.platform-name != 'linux_arm64' && inputs.platform-name != 'windows_arm64' }}
       run: mvn -B jar:jar -Dgitlab-token=${{ env.GITLAB_TOKEN }} -s settings.xml surefire:test
       shell: bash
 

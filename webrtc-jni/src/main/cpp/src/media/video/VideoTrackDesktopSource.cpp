@@ -25,6 +25,7 @@
 #include "third_party/libyuv/include/libyuv/video_common.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/time_utils.h"
 
 #include "modules/desktop_capture/desktop_capturer.h"
 #include "modules/desktop_capture/desktop_and_cursor_composer.h"
@@ -194,7 +195,13 @@ namespace jni
 			buffer->MutableDataU(), buffer->StrideU(),
 			buffer->MutableDataV(), buffer->StrideV(),
 			crop_x, crop_y,
-			frame->stride() / webrtc::DesktopFrame::kBytesPerPixel, buffer->height(), crop_w, crop_h,
+			// (src_width, src_height) must describe the FULL source frame, not the cropped
+			// output. Passing buffer->height() (== crop_h) here made libyuv's internal
+			// bounds check (crop_y + crop_height <= src_height) fail with -1 whenever
+			// crop_y > 0 — i.e. for every maximized window, whose frame sits at
+			// top_left().y() == -border. Screen frames never hit this branch (exact stride,
+			// fullscreen == true), which is why only window capture appeared broken.
+			frame->stride() / webrtc::DesktopFrame::kBytesPerPixel, height, crop_w, crop_h,
 			libyuv::kRotate0,
 			libyuv::FOURCC_ARGB);
 
@@ -260,18 +267,27 @@ namespace jni
 		options.set_prefer_cursor_embedded(true);
 #endif
 
-		std::unique_ptr<webrtc::DesktopCapturer> capturer;
+		std::unique_ptr<webrtc::DesktopCapturer> inner;
 
-		if (sourceIsWindow) {
-			capturer.reset(new webrtc::DesktopAndCursorComposer(
-				webrtc::DesktopCapturer::CreateWindowCapturer(options),
-				options));
+#if defined(WEBRTC_USE_PIPEWIRE)
+		// Wayland: request "any screen content" so the xdg-desktop-portal picker
+		// offers both monitors and application windows in a single dialog (the
+		// same CaptureType::kAnyScreenContent Chromium uses for getDisplayMedia).
+		// CreateGenericCapturer returns null when not running under Wayland or
+		// when PipeWire is disallowed, in which case we fall back to the
+		// type-specific capturers below. The portal handles the actual source
+		// selection, so sourceIsWindow is irrelevant on this path.
+		inner = webrtc::DesktopCapturer::CreateGenericCapturer(options);
+#endif
+
+		if (!inner) {
+			inner = sourceIsWindow
+				? webrtc::DesktopCapturer::CreateWindowCapturer(options)
+				: webrtc::DesktopCapturer::CreateScreenCapturer(options);
 		}
-		else {
-			capturer.reset(new webrtc::DesktopAndCursorComposer(
-				webrtc::DesktopCapturer::CreateScreenCapturer(options),
-				options));
-		}
+
+		std::unique_ptr<webrtc::DesktopCapturer> capturer;
+		capturer.reset(new webrtc::DesktopAndCursorComposer(std::move(inner), options));
 
 		if (!capturer->SelectSource(sourceId)) {
 			terminate();
@@ -286,15 +302,24 @@ namespace jni
 
 		sourceState = kLive;
 
-		int msPerFrame = 1000 / frameRate;
+		const int64_t msPerFrame = 1000 / frameRate;
 
 		while (isCapturing) {
+			const int64_t frameStart = webrtc::TimeMillis();
+
 #if defined(WEBRTC_MAC)
 			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true);
 #endif
 			capturer->CaptureFrame();
 
-			webrtc::Thread::SleepMs(msPerFrame);
+			// CaptureFrame takes time of its own, up to a full display refresh
+			// with DXGI, so sleeping the whole interval afterwards halved the
+			// effective frame rate. Sleep only for what is left of the interval.
+			const int64_t elapsed = webrtc::TimeMillis() - frameStart;
+
+			if (elapsed < msPerFrame) {
+				webrtc::Thread::SleepMs(static_cast<int>(msPerFrame - elapsed));
+			}
 		}
 
 		capturer.reset();
