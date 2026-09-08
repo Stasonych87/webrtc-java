@@ -144,7 +144,7 @@ jobs:
         id: prepare-release-step
         run: |
           mvn release:prepare -s settings.xml -DskipTests -DpushChanges=false \
-            -DdryRun=false \
+            -DdryRun=false -Dgitlab.token=${{ secrets.GITLAB_TOKEN }}\
             -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
 
           # Get the release version from the release.properties file
