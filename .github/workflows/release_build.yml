@@ -130,11 +130,11 @@ jobs:
 
       - name: View prepare params
         env:
-          MY_SECRET1: ${{ secrets.GITLAB_TOKEN }}
+          MY_VALUE: ${{ secrets.GITLAB_TOKEN }}
         run: |
           echo "dryRun=${{ inputs.dryRun }}"
           echo "developmentVersion=${{ github.event.inputs.developmentVersion }}"
-          echo "$MY_SECRET1"
+          echo "MY_VALUE = $MY_VALUE"
 
       - name: Setup WireGuard VPN
         uses: rkalkani/wireguard-action@v2
