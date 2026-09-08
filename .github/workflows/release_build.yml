@@ -143,7 +143,7 @@ jobs:
       - name: Prepare release
         id: prepare-release-step
         run: |
-          mvn release:prepare -DskipTests -DpushChanges=false \
+          mvn release:prepare -s settings.xml -DskipTests -DpushChanges=false \
             -DdryRun=false \
             -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
 
@@ -423,7 +423,7 @@ jobs:
         run: |
           version="${{ steps.release-version.outputs.version }}"
 
-          mvn -B install:install-file \
+          mvn -B install:install-file -s settings.xml \
             -Dfile="natives/webrtc-java-$version-linux-x86_64.jar" \
             -DgroupId=dev.onvoid.webrtc \
             -DartifactId=webrtc-java \
@@ -446,7 +446,7 @@ jobs:
         run: >
           mvn -B deploy -pl .,webrtc -Prelease -DskipTests
           -Dnatives.dir="$PWD/natives"
-          -DskipPublishing=true
+          -DskipPublishing=true -s settings.xml
 #          mvn -B deploy -pl .,webrtc -Prelease -DskipTests
 #          -Dnatives.dir="$PWD/natives"
 #          -DskipPublishing=${{ inputs.dryRun }}
