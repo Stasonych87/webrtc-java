@@ -168,9 +168,9 @@ jobs:
 #          echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
 #          echo "version=$RELEASE_VERSION"
 
-      - name: Exit workflow
-        run: |
-          exit 1
+#      - name: Exit workflow
+#        run: |
+#          exit 1
 
       - name: View release info
         if: ${{ !inputs.dryRun }}
