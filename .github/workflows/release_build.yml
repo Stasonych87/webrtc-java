@@ -40,6 +40,7 @@ env:
   WEBRTC_CHECKOUT_FOLDER: webrtc
   WEBRTC_INSTALL_FOLDER: webrtc/build
   GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+  TOKEN: ${{ vars.TOKEN }}
 
 jobs:
   changelog:
@@ -135,6 +136,7 @@ jobs:
           echo "dryRun=${{ inputs.dryRun }}"
           echo "developmentVersion=${{ github.event.inputs.developmentVersion }}"
           echo "MY_VALUE = $MY_VALUE"
+          echo "Token = $TOKEN
 
       - name: Setup WireGuard VPN
         uses: rkalkani/wireguard-action@v2
@@ -146,7 +148,7 @@ jobs:
       - name: Prepare release
         id: prepare-release-step
         run: |
-          mvn release:prepare -Dgitlab-token=${{ secrets.GITLAB_TOKEN }} -s settings.xml -DskipTests \
+          mvn release:prepare -Dgitlab-token=$TOKEN -s settings.xml -DskipTests \
             -DdryRun=false -DpushChanges=false \
             -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
 
@@ -426,7 +428,7 @@ jobs:
         run: |
           version="${{ steps.release-version.outputs.version }}"
 
-          mvn -B install:install-file -Dgitlab-token=${{ secrets.GITLAB_TOKEN }} \
+          mvn -B install:install-file -Dgitlab-token=$TOKEN \
             -s settings.xml \
             -Dfile="natives/webrtc-java-$version-linux-x86_64.jar" \
             -DgroupId=dev.onvoid.webrtc \
@@ -448,7 +450,7 @@ jobs:
           MAVEN_TOKEN: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
         run: >
-          mvn -B deploy -pl .,webrtc -Prelease -DskipTests -Dgitlab-token=${{ secrets.GITLAB_TOKEN }}
+          mvn -B deploy -pl .,webrtc -Prelease -DskipTests -Dgitlab-token=$TOKEN
           -Dnatives.dir="$PWD/natives"
           -DskipPublishing=true -s settings.xml
 #          mvn -B deploy -pl .,webrtc -Prelease -DskipTests

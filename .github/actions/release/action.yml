@@ -41,11 +41,11 @@ runs:
     - name: Build
       run: |
         if [ "${{ inputs.platform-name }}" == "linux_arm" ]; then
-          mvn package -Dgitlab-token=${{ secrets.GITLAB_TOKEN }} -s settings.xml -DskipTests -Plinux-aarch32
+          mvn package -Dgitlab-token=${{ vars.TOKEN }} -s settings.xml -DskipTests -Plinux-aarch32
         elif [ "${{ inputs.platform-name }}" == "linux_arm64" ]; then
-          mvn package -Dgitlab-token=${{ secrets.GITLAB_TOKEN }} -s settings.xml -DskipTests -Plinux-aarch64
+          mvn package -Dgitlab-token=${{ vars.TOKEN }} -s settings.xml -DskipTests -Plinux-aarch64
         else
-          mvn package -Dgitlab-token=${{ secrets.GITLAB_TOKEN }} -s settings.xml -DskipTests
+          mvn package -Dgitlab-token=${{ vars.TOKEN }} -s settings.xml -DskipTests
         fi
       shell: bash
 
