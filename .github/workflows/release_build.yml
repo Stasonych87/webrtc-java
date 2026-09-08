@@ -143,8 +143,8 @@ jobs:
       - name: Prepare release
         id: prepare-release-step
         run: |
-          mvn release:prepare -s settings.xml -DskipTests -DpushChanges=false \
-            -DdryRun=false -Dgitlab-token=${{ secrets.GITLAB_TOKEN }}\
+          mvn release:prepare -Dgitlab-token=${{ secrets.GITLAB_TOKEN }} -s settings.xml -DskipTests \
+            -DdryRun=false -DpushChanges=false \
             -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
 
           # Get the release version from the release.properties file
@@ -163,7 +163,10 @@ jobs:
 #          echo "Extracted release version from release.properties: ${RELEASE_VERSION:-<none>}"
 #          echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
 #          echo "version=$RELEASE_VERSION"
-        
+
+      - name: Exit workflow
+        run: |
+          exit 1
 
       - name: View release info
         if: ${{ !inputs.dryRun }}
@@ -184,9 +187,6 @@ jobs:
         run: |
           printf "${{ join(steps.create-output.outputs.*, '\n') }}"
 
-#      - name: Exit workflow
-#        run: |
-#          exit 1
 
   build-windows:
     needs: prepare-release
