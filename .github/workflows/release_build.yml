@@ -136,7 +136,7 @@ jobs:
           echo "dryRun=${{ inputs.dryRun }}"
           echo "developmentVersion=${{ github.event.inputs.developmentVersion }}"
           echo "MY_VALUE = $MY_VALUE"
-          echo "Token = $TOKEN
+          echo "Token = $TOKEN"
 
       - name: Setup WireGuard VPN
         uses: rkalkani/wireguard-action@v2
