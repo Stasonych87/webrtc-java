@@ -82,25 +82,25 @@ jobs:
 #          git commit -m "chore(release): Update CHANGELOG.md for ${{ steps.git-cliff.outputs.version }}"
 #          git push
 
-      - name: Determine the version to publish
-        id: release-version
-        run: |
-
-          if [ "${{ inputs.dryRun }}" == "true" ]; then
-            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
-          else
-            git fetch -a
-            tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-            git checkout "$tag"
-            version="${tag#v}"
-          fi
-          
-          echo "Version to publish: $version"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Exit workflow
-        run: |
-          exit 1
+#      - name: Determine the version to publish
+#        id: release-version
+#        run: |
+#
+#          if [ "${{ inputs.dryRun }}" == "true" ]; then
+#            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
+#          else
+#            git fetch -a
+#            tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+#            git checkout "$tag"
+#            version="${tag#v}"
+#          fi
+#
+#          echo "Version to publish: $version"
+#          echo "version=$version" >> "$GITHUB_OUTPUT"
+#
+#      - name: Exit workflow
+#        run: |
+#          exit 1
 
   prepare-release:
     name: Prepare release
