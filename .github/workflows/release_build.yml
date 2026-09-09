@@ -82,6 +82,26 @@ jobs:
 #          git commit -m "chore(release): Update CHANGELOG.md for ${{ steps.git-cliff.outputs.version }}"
 #          git push
 
+      - name: Determine the version to publish
+        id: release-version
+        run: |
+
+          if [ "${{ inputs.dryRun }}" == "true" ]; then
+            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
+          else
+            git fetch -a
+            tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+            git checkout "$tag"
+            version="${tag#v}"
+          fi
+          
+          echo "Version to publish: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Exit workflow
+        run: |
+          exit 1
+
   prepare-release:
     name: Prepare release
     needs: changelog
@@ -386,7 +406,7 @@ jobs:
             git checkout "$tag"
             version="${tag#v}"
           fi
-          version=$RELEASE_VERSION
+          
           echo "Version to publish: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
@@ -460,7 +480,7 @@ jobs:
         run: >
           mvn -B deploy -pl .,webrtc -Prelease -DskipTests -Dgitlab-token=$GITLAB_TOKEN
           -Dnatives.dir="$PWD/natives"
-          -DskipPublishing=true -s settings.xml
+          -DskipPublishing=${{ inputs.dryRun }} -s settings.xml
 #          mvn -B deploy -pl .,webrtc -Prelease -DskipTests
 #          -Dnatives.dir="$PWD/natives"
 #          -DskipPublishing=${{ inputs.dryRun }}
