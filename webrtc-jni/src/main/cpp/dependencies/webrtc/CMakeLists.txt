@@ -4,7 +4,7 @@ project(webrtc)
 if(APPLE)
     message(STATUS "CLEAN WEBRTC SRC DIR - ${WEBRTC_SRC_DIR}")
     file(REMOVE_RECURSE "${WEBRTC_SRC_DIR}")
-endif(
+endif()
 
 if(LINUX)
     # Used for Linux sysroot installation
