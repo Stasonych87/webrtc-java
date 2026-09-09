@@ -155,6 +155,7 @@ jobs:
           RELEASE_VERSION=$(grep "project.rel.dev.onvoid.webrtc\\\:webrtc-java=" release.properties 2>/dev/null | cut -d'=' -f2 || true)
           echo "Extracted release version from release.properties: ${RELEASE_VERSION:-<none>}"
           echo "version=$RELEASE_VERSION" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
           echo "version=$RELEASE_VERSION" 
           echo "release_version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
           echo "release_version=$RELEASE_VERSION"
@@ -417,10 +418,10 @@ jobs:
 
           exit $status
 
-      - name: Setup WireGuard VPN
-        uses: rkalkani/wireguard-action@v2
-        with:
-          wg-config-file: ${{ secrets.WG_CONFIG }}
+#      - name: Setup WireGuard VPN
+#        uses: rkalkani/wireguard-action@v2
+#        with:
+#          wg-config-file: ${{ secrets.WG_CONFIG }}
 
       # The webrtc module depends on its own native library jar for the host
       # platform. That dependency is normally installed by webrtc-jni, which is kept
@@ -438,6 +439,11 @@ jobs:
             -Dclassifier=linux-x86_64 \
             -Dpackaging=jar \
             -DgeneratePom=false
+
+      - name: Setup WireGuard VPN
+        uses: rkalkani/wireguard-action@v2
+        with:
+          wg-config-file: ${{ secrets.WG_CONFIG }}
 
       # skipPublishing suppresses both the bundling and the upload, so a dry run
       # still builds, signs and attaches everything without anything leaving the
