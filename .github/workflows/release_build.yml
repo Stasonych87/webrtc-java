@@ -377,20 +377,21 @@ jobs:
       - name: Determine the version to publish
         id: release-version
         run: |
-          echo "Version to publish:  ${{needs.prepare-release.outputs.release_build_version}}"
-          echo "version=${{needs.prepare-release.outputs.release_build_version}}" >> "$GITHUB_OUTPUT"
 
-#          if [ "${{ inputs.dryRun }}" == "true" ]; then
-#            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
-#          else
-#            git fetch -a
-#            tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-#            git checkout "$tag"
-#            version="${tag#v}"
-#          fi
-#          version=$RELEASE_VERSION
-#          echo "Version to publish: $version"
-#          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "${{ inputs.dryRun }}" == "true" ]; then
+            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
+          else
+            git fetch -a
+            tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+            git checkout "$tag"
+            version="${tag#v}"
+          fi
+          version=$RELEASE_VERSION
+          echo "Version to publish: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+#          echo "Version to publish:  ${{needs.prepare-release.outputs.release_build_version}}"
+#          echo "version=${{needs.prepare-release.outputs.release_build_version}}" >> "$GITHUB_OUTPUT"
 
       - name: Download the native library jars of all platforms
         uses: actions/download-artifact@v4
