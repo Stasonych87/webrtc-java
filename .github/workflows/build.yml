@@ -27,6 +27,8 @@ jobs:
         platform:
           - name: windows_x86_64
             runs-on: windows-2022
+          - name: windows_arm64
+            runs-on: windows-2022
         java: [17]
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
@@ -45,6 +47,14 @@ jobs:
           platform-name: ${{ matrix.platform.name }}
           maven-username: ${{ secrets.MAVEN_USERNAME }}
           maven-password: ${{ secrets.MAVEN_TOKEN }}
+
+      - name: Upload natives for native testing
+        if: matrix.platform.name == 'windows_arm64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: natives-${{ matrix.platform.name }}
+          path: webrtc-jni/target/webrtc-java-*.jar
+          if-no-files-found: error
 
   build-linux:
     strategy:
@@ -75,6 +85,14 @@ jobs:
           platform-name: ${{ matrix.platform.name }}
           maven-username: ${{ secrets.MAVEN_USERNAME }}
           maven-password: ${{ secrets.MAVEN_TOKEN }}
+
+      - name: Upload natives for native testing
+        if: matrix.platform.name == 'linux_arm' || matrix.platform.name == 'linux_arm64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: natives-${{ matrix.platform.name }}
+          path: webrtc-jni/target/webrtc-java-*.jar
+          if-no-files-found: error
 
   build-macos:
     strategy:
@@ -115,3 +133,41 @@ jobs:
           platform-name: ${{ matrix.platform.name }}
           maven-username: ${{ secrets.MAVEN_USERNAME }}
           maven-password: ${{ secrets.MAVEN_TOKEN }}
+
+  test-natives:
+    needs: [build-windows, build-linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: windows_arm64
+            runs-on: windows-11-arm
+            classifier: windows-aarch64
+            profile: windows-aarch64
+            java-distribution: microsoft
+            java-architecture: aarch64
+          - name: linux_arm64
+            runs-on: ubuntu-22.04-arm
+            classifier: linux-aarch64
+            profile: linux-aarch64
+            java-distribution: temurin
+            java-architecture: ''
+          - name: linux_arm
+            runs-on: ubuntu-22.04-arm
+            classifier: linux-aarch32
+            profile: linux-aarch32
+            java-distribution: liberica
+            java-architecture: armv7
+    runs-on: ${{ matrix.platform.runs-on }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Test natives
+        uses: ./.github/actions/test-natives
+        with:
+          platform-name: ${{ matrix.platform.name }}
+          classifier: ${{ matrix.platform.classifier }}
+          profile: ${{ matrix.platform.profile }}
+          java-distribution: ${{ matrix.platform.java-distribution }}
+          java-architecture: ${{ matrix.platform.java-architecture }}
