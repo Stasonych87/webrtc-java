@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.13)
 project(webrtc)
 
-message(STATUS "CLEAN WEBRTC SRC DIR - ${WEBRTC_SRC_DIR}")
-file(REMOVE_RECURSE "${WEBRTC_SRC_DIR}")
+if(APPLE)
+    message(STATUS "CLEAN WEBRTC SRC DIR - ${WEBRTC_SRC_DIR}")
+    file(REMOVE_RECURSE "${WEBRTC_SRC_DIR}")
+endif()
 
 if(LINUX)
     # Used for Linux sysroot installation
