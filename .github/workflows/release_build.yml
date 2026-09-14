@@ -338,7 +338,7 @@ jobs:
           platform-name: ${{ matrix.platform.name }}
 
   publish-central:
-    name: Publish to Maven Central
+    name: Publish to Gitlab Package Registry
     needs: [prepare-release, build-windows, build-linux, build-macos]
     outputs:
       release_body: ${{ needs.build-windows.outputs.release_body }}
