@@ -1,4 +1,4 @@
 export const PROJECT_VARS: Record<string, string> = {
-	VERSION: '',
-	VERSION_SNAPSHOT: '0.17.2-SNAPSHOT'
+	VERSION: '0.18.0',
+	VERSION_SNAPSHOT: '0.19.0-SNAPSHOT'
 };
