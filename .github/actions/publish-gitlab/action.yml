@@ -63,7 +63,6 @@ runs:
     - name: Seed the local repository with the host native library
       env:
         VERSION: ${{ inputs.version }}
-        GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
       run: |
         mvn -B install:install-file -Dgitlab-token=$GITLAB_TOKEN \
           -s settings.xml \
@@ -83,7 +82,6 @@ runs:
       env:
         PROFILES: ${{ inputs.profiles }}
         SKIP_PUBLISHING: ${{ inputs.skip-publishing }}
-        GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
       run: >
         mvn -B deploy -pl .,webrtc,webrtc-java-media -DskipTests
         ${PROFILES:+-P$PROFILES}
