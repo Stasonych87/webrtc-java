@@ -122,14 +122,14 @@ jobs:
           profile: ${{ matrix.platform.profile }}
           retention-days: ${{ inputs.retention-days }}
 
-      - name: Test natives
-        uses: ./.github/actions/test-natives
-        with:
-          platform-name: ${{ matrix.platform.name }}
-          classifier: ${{ matrix.platform.classifier }}
-          profile: ${{ matrix.platform.classifier }}
-          java-distribution: ${{ matrix.platform.java-distribution }}
-          java-architecture: ${{ matrix.platform.java-architecture }}
+#      - name: Test natives
+#        uses: ./.github/actions/test-natives
+#        with:
+#          platform-name: ${{ matrix.platform.name }}
+#          classifier: ${{ matrix.platform.classifier }}
+#          profile: ${{ matrix.platform.classifier }}
+#          java-distribution: ${{ matrix.platform.java-distribution }}
+#          java-architecture: ${{ matrix.platform.java-architecture }}
 
   # Every platform is tested on a runner of its own OS and architecture,
   # against the natives the build job uploaded, so that what is tested is
