@@ -52,6 +52,11 @@ runs:
         exit $status
       shell: bash
 
+    - name: Setup WireGuard VPN
+      uses: rkalkani/wireguard-action@v2
+      with:
+        wg-config-file: ${{ secrets.WG_CONFIG }}
+
     # The webrtc module depends on its own native library jar for the host
     # platform. That dependency is normally installed by webrtc-jni, which is kept
     # out of the reactor here to avoid rebuilding the native libraries.
@@ -70,11 +75,6 @@ runs:
           -Dpackaging=jar \
           -DgeneratePom=false
       shell: bash
-
-    - name: Setup WireGuard VPN
-      uses: rkalkani/wireguard-action@v2
-      with:
-        wg-config-file: ${{ secrets.WG_CONFIG }}
 
     # natives.dir makes webrtc and webrtc-java-media attach the jars of all
     # platforms instead of the host's. skipPublishing suppresses both the
