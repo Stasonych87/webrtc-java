@@ -93,11 +93,15 @@ jobs:
       matrix:
         platform:
           - name: macos_arm64
-            runs-on: [self-hosted,mac-office-arm64]
-            profile: ''
+            runs-on: [ self-hosted,mac-office-arm64 ]
+            classifier: macos-aarch64
+            java-distribution: temurin
+            java-architecture: ''
           - name: macos_x86-64
-            runs-on: [self-hosted,mac-office-arm64]
-            profile: macos-cross-x86_64
+            runs-on: [ self-hosted,mac-office-arm64 ]
+            classifier: macos-x86_64
+            java-distribution: temurin
+            java-architecture: ''
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - name: Checkout code
@@ -117,6 +121,15 @@ jobs:
           platform-name: ${{ matrix.platform.name }}
           profile: ${{ matrix.platform.profile }}
           retention-days: ${{ inputs.retention-days }}
+
+      - name: Test natives
+        uses: ./.github/actions/test-natives
+        with:
+          platform-name: ${{ matrix.platform.name }}
+          classifier: ${{ matrix.platform.classifier }}
+          profile: ${{ matrix.platform.classifier }}
+          java-distribution: ${{ matrix.platform.java-distribution }}
+          java-architecture: ${{ matrix.platform.java-architecture }}
 
   # Every platform is tested on a runner of its own OS and architecture,
   # against the natives the build job uploaded, so that what is tested is
@@ -183,39 +196,39 @@ jobs:
           java-distribution: ${{ matrix.platform.java-distribution }}
           java-architecture: ${{ matrix.platform.java-architecture }}
 
-  test-natives-macos:
-    name: test-natives (${{ matrix.platform.name }})
-    needs: build-macos
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        # java-architecture: the JDK architecture, when it differs from the
-        #   runner's. linux_arm runs a 32-bit ARM JDK on an arm64 runner.
-        platform:
-          - name: macos_arm64
-            runs-on: [self-hosted,mac-office-arm64]
-            classifier: macos-aarch64
-            java-distribution: temurin
-            java-architecture: ''
-          - name: macos_x86-64
-            runs-on: [self-hosted,mac-office-arm64]
-            classifier: macos-x86_64
-            java-distribution: temurin
-            java-architecture: ''
-    runs-on: ${{ matrix.platform.runs-on }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
-
-      - name: Test natives
-        uses: ./.github/actions/test-natives
-        with:
-          platform-name: ${{ matrix.platform.name }}
-          classifier: ${{ matrix.platform.classifier }}
-          profile: ${{ matrix.platform.classifier }}
-          java-distribution: ${{ matrix.platform.java-distribution }}
-          java-architecture: ${{ matrix.platform.java-architecture }}
+#  test-natives-macos:
+#    name: test-natives (${{ matrix.platform.name }})
+#    needs: build-macos
+#    timeout-minutes: 30
+#    strategy:
+#      fail-fast: false
+#      max-parallel: 1
+#      matrix:
+#        # java-architecture: the JDK architecture, when it differs from the
+#        #   runner's. linux_arm runs a 32-bit ARM JDK on an arm64 runner.
+#        platform:
+#          - name: macos_arm64
+#            runs-on: [self-hosted,mac-office-arm64]
+#            classifier: macos-aarch64
+#            java-distribution: temurin
+#            java-architecture: ''
+#          - name: macos_x86-64
+#            runs-on: [self-hosted,mac-office-arm64]
+#            classifier: macos-x86_64
+#            java-distribution: temurin
+#            java-architecture: ''
+#    runs-on: ${{ matrix.platform.runs-on }}
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v7
+#        with:
+#          ref: ${{ inputs.ref }}
+#
+#      - name: Test natives
+#        uses: ./.github/actions/test-natives
+#        with:
+#          platform-name: ${{ matrix.platform.name }}
+#          classifier: ${{ matrix.platform.classifier }}
+#          profile: ${{ matrix.platform.classifier }}
+#          java-distribution: ${{ matrix.platform.java-distribution }}
+#          java-architecture: ${{ matrix.platform.java-architecture }}
