@@ -52,10 +52,10 @@ runs:
         exit $status
       shell: bash
 
-    - name: Setup WireGuard VPN
-      uses: rkalkani/wireguard-action@v2
-      with:
-        wg-config-file: ${{ secrets.WG_CONFIG }}
+#    - name: Setup WireGuard VPN
+#      uses: rkalkani/wireguard-action@v2
+#      with:
+#        wg-config-file: ${{ secrets.WG_CONFIG }}
 
     # The webrtc module depends on its own native library jar for the host
     # platform. That dependency is normally installed by webrtc-jni, which is kept
