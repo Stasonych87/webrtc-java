@@ -168,7 +168,7 @@ jobs:
       retention-days: 7
 
   publish-central:
-    name: Publish to Maven Central
+    name: Publish to Gitlab Registry
     needs: [prepare-release, platforms]
     runs-on: ubuntu-22.04
 

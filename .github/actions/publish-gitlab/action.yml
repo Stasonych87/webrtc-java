@@ -1,4 +1,4 @@
-name: 'Maven Publish'
+name: 'Gitlab Publish'
 
 description: 'Deploy one version with the native libraries of every platform attached, as a single deployment'
 
