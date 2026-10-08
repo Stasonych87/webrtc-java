@@ -1,6 +1,6 @@
 name: 'Test Natives'
 
-description: 'Run the test suite on a native runner against natives that a cross compiling lane built'
+description: 'Run the test suite on a runner of the platform''s own OS and architecture, against the natives the build job uploaded'
 
 inputs:
   platform-name:
@@ -33,10 +33,18 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # The build uploads each platform's two native jars as separate artifacts,
+    # one flat jar each.
     - name: Download natives
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: natives-${{ inputs.platform-name }}
+        path: natives
+
+    - name: Download media natives
+      uses: actions/download-artifact@v8
+      with:
+        name: natives-media-${{ inputs.platform-name }}
         path: natives
 
     # PulseAudio, libudev and libdbus are deliberately not installed here: the
@@ -58,31 +66,79 @@ runs:
       shell: bash
 
     - name: Set up JDK ${{ inputs.java-version }}
-      uses: actions/setup-java@v5
+      uses: actions/setup-java@v6
       with:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.java-distribution }}
         architecture: ${{ inputs.java-architecture }}
 
-    - name: Ensure Maven
-      run: |
-        if ! command -v mvn >/dev/null 2>&1; then
-          curl -sSLo maven.zip https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip
-          unzip -q maven.zip -d "$RUNNER_TEMP/maven"
-          echo "$RUNNER_TEMP/maven/apache-maven-3.9.9/bin" >> "$GITHUB_PATH"
-        fi
-      shell: bash
-
     - name: Install the natives into the local repository
       run: |
-        VERSION=$(sed -n '0,/<version>/s|.*<version>\([^<]*\)</version>.*|\1|p' pom.xml)
-        JAR=$(ls natives/webrtc-java-*.jar | head -n 1)
+        # The root pom has no parent, so its first <version> is the project's.
+        # Not sed's 0,/re/ address: that is GNU only, and macOS has BSD sed.
+        VERSION=$(sed -n 's|.*<version>\([^<]*\)</version>.*|\1|p' pom.xml | head -n 1)
+        if [ -z "$VERSION" ]; then
+          echo "Could not read the project version from pom.xml" >&2
+          exit 1
+        fi
+        JAR=$(find natives -name 'webrtc-java-*-${{ inputs.classifier }}.jar' ! -name 'webrtc-java-media-*' | head -n 1)
+        if [ -z "$JAR" ]; then
+          echo "No webrtc-java natives for ${{ inputs.classifier }} in the artifact" >&2
+          exit 1
+        fi
         echo "Installing $JAR as webrtc-java:$VERSION:${{ inputs.classifier }}"
         mvn -B -q install:install-file -Dfile="$JAR" -DgroupId=dev.onvoid.webrtc \
           -DartifactId=webrtc-java -Dversion="$VERSION" -Dpackaging=jar \
           -Dclassifier=${{ inputs.classifier }}
       shell: bash
 
-    - name: Test
-      run: mvn -B -pl webrtc test -P${{ inputs.profile }}
+    # Both native libraries go into the directory the media module's tests
+    # already read from, which is where its own build collects them. That is
+    # what puts them on the class path, and it is also what makes the reactor
+    # below work: webrtc-java's natives are a classifier artifact of a module
+    # that is in that reactor, and Maven answers a dependency on such a thing
+    # with the module's output directory, which holds no native library at
+    # all. Coming from a directory instead, they are simply found.
+    - name: Unpack the natives where the tests look for them
+      run: |
+        MEDIA_JAR=$(find natives -name 'webrtc-java-media-*-${{ inputs.classifier }}.jar' | head -n 1)
+        WEBRTC_JAR=$(find natives -name 'webrtc-java-*-${{ inputs.classifier }}.jar' ! -name 'webrtc-java-media-*' | head -n 1)
+
+        if [ -z "$MEDIA_JAR" ]; then
+          echo "No webrtc-java-media natives for ${{ inputs.classifier }} in the artifact" >&2
+          exit 1
+        fi
+
+        MEDIA_JAR="$PWD/$MEDIA_JAR"
+        WEBRTC_JAR="$PWD/$WEBRTC_JAR"
+
+        mkdir -p webrtc-java-media/target/natives
+        cd webrtc-java-media/target/natives
+        # jar rather than unzip: the JDK is set up above, and unzip is not on
+        # every runner image.
+        "$JAVA_HOME/bin/jar" xf "$MEDIA_JAR"
+        "$JAVA_HOME/bin/jar" xf "$WEBRTC_JAR"
+        rm -rf META-INF
+        ls -l
       shell: bash
+
+    # One reactor for both, so that webrtc-java-media resolves webrtc-java
+    # from it. Testing rather than installing: webrtc attaches the host
+    # natives from webrtc-jni/target during its package phase, and on a runner
+    # that only downloaded them there is no such directory.
+    #
+    # The native build is off: these natives were cross compiled by another
+    # job, and this runner is here to run them, not to build them again.
+    - name: Test
+      run: mvn -B -pl webrtc,webrtc-java-media test -DskipNativeBuild -P${{ inputs.profile }} -Dsurefire.timeout=1800
+      shell: bash
+
+    # What failed, for runners that cannot be reproduced locally.
+    - name: Upload test reports
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: test-reports-native-${{ inputs.platform-name }}
+        path: '**/target/surefire-reports/'
+        if-no-files-found: ignore
+        retention-days: 7

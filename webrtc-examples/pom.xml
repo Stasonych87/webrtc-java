@@ -5,7 +5,7 @@
     <parent>
         <groupId>dev.onvoid.webrtc</groupId>
         <artifactId>webrtc-java-parent</artifactId>
-        <version>0.18.2-SNAPSHOT</version>
+        <version>0.20.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>webrtc-java-examples</artifactId>
@@ -16,11 +16,32 @@
         <maven.deploy.skip>true</maven.deploy.skip>
         <maven.install.skip>true</maven.install.skip>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty.version>12.0.36</jetty.version>
+        <jetty.version>12.1.13</jetty.version>
     </properties>
 
     <build>
         <plugins>
+            <!--
+                The media example needs webrtc-java-media's natives at run
+                time. They are not a dependency: the module attaches them at
+                its package phase, and "mvn jar:jar surefire:test", which CI
+                runs, invokes goals directly and so runs no phase at all,
+                leaving nothing to resolve against. Pointing at the directory
+                the CMake build collects them into keeps them off the
+                dependency graph entirely, which is also how the media
+                module's own tests find them.
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.6.4</version>
+                <configuration>
+                    <additionalClasspathElements>
+                        <additionalClasspathElement>${project.basedir}/../webrtc-java-media/target/natives</additionalClasspathElement>
+                    </additionalClasspathElements>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -66,6 +87,12 @@
         </dependency>
 
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>webrtc-java-media</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
             <version>${jetty.version}</version>
@@ -85,13 +112,14 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.22.1</version>
+            <version>2.22.3</version>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
-            <version>2.0.18</version>
+            <version>2.0.20</version>
         </dependency>
     </dependencies>
+
 </project>

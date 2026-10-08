@@ -5,36 +5,20 @@ description: 'Frees up disk space and installs required packages for Windows bui
 runs:
   using: "composite"
   steps:
-    - name: Set up Python 3.11
-      if: false
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-
-    - name: Disk cleanup
-      if: false
-      run: |
-        Get-PSDrive
-        # Docker Images
-        docker rmi $(docker images -q -a)
-        # Android SDK
-        if ($Env:ANDROID_HOME) {
-          Remove-Item -Recurse -Force $Env:ANDROID_HOME -ErrorAction Ignore
-        }
-        if ($Env:ANDROID_NDK_HOME) {
-          Remove-Item -Recurse -Force $Env:ANDROID_NDK_HOME -ErrorAction Ignore
-        }
-        # JVM
-        if ($Env:JAVA_HOME_11_X64) {
-          Remove-Item -Recurse -Force $Env:JAVA_HOME_11_X64 -ErrorAction Ignore
-        }
-        if ($Env:JAVA_HOME_8_X64) {
-          Remove-Item -Recurse -Force $Env:JAVA_HOME_8_X64 -ErrorAction Ignore
-        }
-        Get-PSDrive
-      shell: powershell
-
     - name: Install required packages
       run: |
         choco install ninja
+      shell: powershell
+
+    - name: Install MSYS2 and the FFmpeg build tools
+      run: |
+        # FFmpeg's configure and makefiles are shell scripts, so building it
+        # needs a POSIX shell even with MSVC, and that shell has to carry make
+        # and nasm. Git for Windows' bash carries neither.
+        if (-not (Test-Path "C:\msys64\usr\bin\bash.exe")) {
+          choco install msys2 --no-progress -y
+        }
+        C:\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm && pacman -S --needed --noconfirm make nasm diffutils pkgconf"
+        # Where the media module's CMake looks for it.
+        "MSYS2_ROOT=C:\msys64" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       shell: powershell

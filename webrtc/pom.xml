@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>dev.onvoid.webrtc</groupId>
 		<artifactId>webrtc-java-parent</artifactId>
-		<version>0.18.2-SNAPSHOT</version>
+		<version>0.20.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>webrtc-java</artifactId>
@@ -18,7 +18,11 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
+					<!-- add-exports: dev.onvoid.webrtc.internal is not exported to
+					     applications, but the tests cover NativeApi, which native
+					     extension modules use to reach the native sources. -->
 					<argLine>
+						--add-exports webrtc.java/dev.onvoid.webrtc.internal=ALL-UNNAMED
 						--add-opens webrtc.java/dev.onvoid.webrtc=ALL-UNNAMED
 						--add-opens webrtc.java/dev.onvoid.webrtc.logging=ALL-UNNAMED
 						--add-opens webrtc.java/dev.onvoid.webrtc.media=ALL-UNNAMED
@@ -66,6 +70,7 @@
 							<forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory" />
 							<argLine>
 								-Xcheck:jni
+								--add-exports webrtc.java/dev.onvoid.webrtc.internal=ALL-UNNAMED
 								--add-opens webrtc.java/dev.onvoid.webrtc=ALL-UNNAMED
 								--add-opens webrtc.java/dev.onvoid.webrtc.logging=ALL-UNNAMED
 								--add-opens webrtc.java/dev.onvoid.webrtc.media=ALL-UNNAMED
@@ -120,7 +125,7 @@
 			build jobs. Maven Central publishes a version as one atomic bundle, hence
 			all classifiers must be attached to a single deployment.
 
-			Run with: mvn deploy -pl .,webrtc -Prelease -Dnatives.dir=/abs/path
+			Run with: mvn deploy -pl .,webrtc,webrtc-java-media -Prelease -Dnatives.dir=/abs/path
 		-->
 		<profile>
 			<id>attach-natives-all</id>

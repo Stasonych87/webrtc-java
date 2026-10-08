@@ -5,10 +5,17 @@ description: 'Installs required packages for macOS builds.'
 runs:
   using: "composite"
   steps:
+    # No Homebrew self-update: it takes minutes and neither package needs it.
     - name: Install required packages
+      env:
+        HOMEBREW_NO_AUTO_UPDATE: '1'
+        HOMEBREW_NO_INSTALL_CLEANUP: '1'
       run: |
         # Required on macos-14
         brew install python-setuptools
+        # nasm is what FFmpeg assembles its x86 code with, which the Intel
+        # build needs even though the runner itself is Apple Silicon.
+        brew install nasm
       shell: bash
 
     - name: Select Xcode version

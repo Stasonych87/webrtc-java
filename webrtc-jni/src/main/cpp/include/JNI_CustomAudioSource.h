@@ -33,11 +33,19 @@ extern "C" {
 
 	/*
 	 * Class:     dev_onvoid_webrtc_media_audio_CustomAudioSource
-	 * Method:    pushAudio
+	 * Method:    pushAudioInternal
 	 * Signature: ([BIIII)V
 	 */
-	JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_media_audio_CustomAudioSource_pushAudio
+	JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_media_audio_CustomAudioSource_pushAudioInternal
 	(JNIEnv *, jobject, jbyteArray, jint, jint, jint, jint);
+
+	/*
+	 * Class:     dev_onvoid_webrtc_media_audio_CustomAudioSource
+	 * Method:    pushAudioTimestamped
+	 * Signature: ([BIIIIJ)V
+	 */
+	JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_media_audio_CustomAudioSource_pushAudioTimestamped
+	(JNIEnv *, jobject, jbyteArray, jint, jint, jint, jint, jlong);
 
 #ifdef __cplusplus
 }
