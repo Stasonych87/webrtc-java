@@ -255,27 +255,27 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-  publish-release:
-    name: Publish GitHub release
-    needs: [prepare-release, publish-central]
-    if: ${{ !inputs.dryRun }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      # The notes are commit subjects, so they go through the environment and a file
-      # rather than into the script, where a quote or a backtick would be run.
-      # --verify-tag fails instead of creating a tag that release:prepare did not.
-      - name: Publish
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_VERSION: ${{ needs.prepare-release.outputs.release_tag }}
-          RELEASE_BODY: ${{ needs.prepare-release.outputs.release_body }}
-        run: |
-          printf '%s\n' "$RELEASE_BODY" > release-notes.md
-          gh release create "$RELEASE_VERSION" --draft --verify-tag \
-            -t "Release $RELEASE_VERSION" -F release-notes.md
+#  publish-release:
+#    name: Publish GitHub release
+#    needs: [prepare-release, publish-central]
+#    if: ${{ !inputs.dryRun }}
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: write
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v7
+#
+#      # The notes are commit subjects, so they go through the environment and a file
+#      # rather than into the script, where a quote or a backtick would be run.
+#      # --verify-tag fails instead of creating a tag that release:prepare did not.
+#      - name: Publish
+#        env:
+#          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          RELEASE_VERSION: ${{ needs.prepare-release.outputs.release_tag }}
+#          RELEASE_BODY: ${{ needs.prepare-release.outputs.release_body }}
+#        run: |
+#          printf '%s\n' "$RELEASE_BODY" > release-notes.md
+#          gh release create "$RELEASE_VERSION" --draft --verify-tag \
+#            -t "Release $RELEASE_VERSION" -F release-notes.md
