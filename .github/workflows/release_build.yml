@@ -40,7 +40,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
-          ref: main
+#          ref: main
           fetch-depth: 0
 
       - name: Git config
@@ -149,7 +149,8 @@ jobs:
           git commit --amend --no-edit
 
           # The branch and the tag land together or not at all.
-          git push --atomic origin HEAD:main "refs/tags/$RELEASE_TAG"
+          git push --tags
+#          git push --atomic origin HEAD:main "refs/tags/$RELEASE_TAG"
 
   # The tag prepare-release pushed. A dry run pushes none and builds the
   # dispatched commit instead.

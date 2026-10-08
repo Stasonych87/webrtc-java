@@ -62,7 +62,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.ref }}
+#          ref: ${{ inputs.ref }}
           # The media module builds FFmpeg from its third-party submodule.
           submodules: true
 
@@ -107,7 +107,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.ref }}
+#          ref: ${{ inputs.ref }}
           # The media module builds FFmpeg from its third-party submodule.
           submodules: true
 
@@ -184,8 +184,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
+#        with:
+#          ref: ${{ inputs.ref }}
 
       - name: Test natives
         uses: ./.github/actions/test-natives
