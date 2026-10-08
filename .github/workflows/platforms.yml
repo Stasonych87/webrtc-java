@@ -51,12 +51,12 @@ jobs:
           - name: linux_arm
             runs-on: ubuntu-22.04
             profile: linux-aarch32
-          - name: macos_arm64
-            runs-on: [self-hosted,mac-office-arm64]
-            profile: ''
-          - name: macos_x86-64
-            runs-on: [self-hosted,mac-office-arm64]
-            profile: macos-cross-x86_64
+#          - name: macos_arm64
+#            runs-on: [self-hosted,mac-office-arm64]
+#            profile: ''
+#          - name: macos_x86-64
+#            runs-on: [self-hosted,mac-office-arm64]
+#            profile: macos-cross-x86_64
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - name: Checkout code
@@ -73,6 +73,38 @@ jobs:
       - name: Prepare build
         if: runner.os == 'Linux'
         uses: ./.github/actions/prepare-linux
+
+#      - name: Prepare build
+#        if: runner.os == 'macOS'
+#        uses: ./.github/actions/prepare-macos
+
+      - name: Maven build
+        uses: ./.github/actions/build
+        with:
+          platform-name: ${{ matrix.platform.name }}
+          profile: ${{ matrix.platform.profile }}
+          retention-days: ${{ inputs.retention-days }}
+
+  build-macos:
+    name: build (${{ matrix.platform.name }})
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        platform:
+          - name: macos_x86-64
+            runs-on: [ self-hosted,mac-office-arm64 ]
+          - name: macos_arm64
+            runs-on: [ self-hosted,mac-office-arm64 ]
+        java: [ 17 ]
+    runs-on: ${{ matrix.platform.runs-on }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          # The media module builds FFmpeg from its third-party submodule.
+          submodules: true
 
       - name: Prepare build
         if: runner.os == 'macOS'
