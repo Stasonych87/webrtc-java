@@ -67,6 +67,15 @@ jobs:
           # The media module builds FFmpeg from its third-party submodule.
           submodules: true
 
+      - name: Get tag from current branch
+        id: tag-selector
+        if: ${{ !inputs.dryRun }}
+        run: |
+          git fetch -a
+          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git checkout $tag
+
       - name: Prepare build
         if: runner.os == 'Windows'
         uses: ./.github/actions/prepare-windows
@@ -108,9 +117,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
+          fetch-tags: true
 #          ref: ${{ inputs.ref }}
           # The media module builds FFmpeg from its third-party submodule.
           submodules: true
+
+      - name: Get tag from current branch
+        id: tag-selector
+        if: ${{ !inputs.dryRun }}
+        run: |
+          git fetch -a
+          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git checkout $tag
 
       - name: Prepare build
         if: runner.os == 'macOS'
@@ -185,8 +204,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-tags: true
 #        with:
 #          ref: ${{ inputs.ref }}
+
+      - name: Get tag from current branch
+        id: tag-selector
+        if: ${{ !inputs.dryRun }}
+        run: |
+          git fetch -a
+          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git checkout $tag
 
       - name: Test natives
         uses: ./.github/actions/test-natives
