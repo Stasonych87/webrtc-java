@@ -126,7 +126,7 @@ jobs:
           DEVELOPMENT_VERSION: ${{ inputs.developmentVersion }}
           EXPECTED_VERSION: ${{ steps.release-version.outputs.version }}
         run: |
-          mvn -B release:prepare -DskipTests -DpushChanges=false -Dgitlab-token=$GITLAB_TOKEN \
+          mvn -B release:prepare -DskipTests -DpushChanges=false \
             -DpreparationGoals="clean validate" \
             -DdryRun=${{ inputs.dryRun }} \
             -DdevelopmentVersion="$DEVELOPMENT_VERSION"
@@ -162,107 +162,107 @@ jobs:
 
   # The tag prepare-release pushed. A dry run pushes none and builds the
   # dispatched commit instead.
-  platforms:
-    needs: prepare-release
-    uses: ./.github/workflows/platforms.yml
-    with:
-      ref: ${{ !inputs.dryRun && needs.prepare-release.outputs.release_tag || '' }}
-      retention-days: 7
-
-  publish-central:
-    name: Publish to Gitlab Registry
-    needs: [prepare-release, platforms]
-    runs-on: ubuntu-22.04
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ !inputs.dryRun && needs.prepare-release.outputs.release_tag || '' }}
-
-      - name: Set up Maven cache
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.m2/repository
-            !~/.m2/repository/dev/onvoid/webrtc
-          key: maven-publish-${{ hashFiles('**/pom.xml') }}
-          restore-keys: maven-publish-
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v6
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          server-id: central
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_TOKEN
-          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
-      - name: Determine the version to publish
-        id: release-version
-        env:
-          RELEASE_TAG: ${{ needs.prepare-release.outputs.release_tag }}
-        run: |
-          if [ "${{ inputs.dryRun }}" == "true" ]; then
-            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
-          else
-            version="${RELEASE_TAG#v}"
-          fi
-
-          echo "Version to publish: $version"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      # skipPublishing suppresses both the bundling and the upload, so a dry run
-      # still builds, signs and attaches everything without anything leaving the
-      # runner. As a second line of defence the Central credentials are replaced by
-      # a placeholder during a dry run: should the upload ever happen regardless, it
-      # fails on authentication instead of publishing a release. Signing does run, so
-      # the GPG passphrase stays intact.
-      - name: Deploy to Gitlab
-        uses: ./.github/actions/publish-gitlab
-        env:
-          MAVEN_USERNAME: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_USERNAME }}
-          MAVEN_TOKEN: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_TOKEN }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-        with:
-          version: ${{ steps.release-version.outputs.version }}
-          profiles: release
-          skip-publishing: ${{ inputs.dryRun }}
-
-      - name: Summarize what would have been published
-        if: ${{ inputs.dryRun }}
-        run: |
-          {
-            echo "## Dry run — nothing was published"
-            echo
-            echo "Version: \`${{ steps.release-version.outputs.version }}\`"
-            echo
-            echo "Artifacts destined for the deployment bundle:"
-            echo '```'
-            ls -1 webrtc/target/*.jar webrtc/target/*.asc \
-              webrtc-java-media/target/*.jar webrtc-java-media/target/*.asc \
-              natives/*.asc 2>/dev/null || true
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload the deployment bundle for inspection
-        if: ${{ inputs.dryRun }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: deployment-bundle-dry-run
-          path: |
-            target/central-*/**
-            webrtc/target/central-*/**
-            webrtc/target/*.jar
-            webrtc/target/*.asc
-            webrtc-java-media/target/central-*/**
-            webrtc-java-media/target/*.jar
-            webrtc-java-media/target/*.asc
-            natives/*.asc
-          if-no-files-found: warn
-          retention-days: 7
+#  platforms:
+#    needs: prepare-release
+#    uses: ./.github/workflows/platforms.yml
+#    with:
+#      ref: ${{ !inputs.dryRun && needs.prepare-release.outputs.release_tag || '' }}
+#      retention-days: 7
+#
+#  publish-central:
+#    name: Publish to Gitlab Registry
+#    needs: [prepare-release, platforms]
+#    runs-on: ubuntu-22.04
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v7
+#        with:
+#          ref: ${{ !inputs.dryRun && needs.prepare-release.outputs.release_tag || '' }}
+#
+#      - name: Set up Maven cache
+#        uses: actions/cache@v6
+#        with:
+#          path: |
+#            ~/.m2/repository
+#            !~/.m2/repository/dev/onvoid/webrtc
+#          key: maven-publish-${{ hashFiles('**/pom.xml') }}
+#          restore-keys: maven-publish-
+#
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v6
+#        with:
+#          java-version: '17'
+#          distribution: 'temurin'
+#          server-id: central
+#          server-username: MAVEN_USERNAME
+#          server-password: MAVEN_TOKEN
+#          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+#          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+#
+#      - name: Determine the version to publish
+#        id: release-version
+#        env:
+#          RELEASE_TAG: ${{ needs.prepare-release.outputs.release_tag }}
+#        run: |
+#          if [ "${{ inputs.dryRun }}" == "true" ]; then
+#            version=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)
+#          else
+#            version="${RELEASE_TAG#v}"
+#          fi
+#
+#          echo "Version to publish: $version"
+#          echo "version=$version" >> "$GITHUB_OUTPUT"
+#
+#      # skipPublishing suppresses both the bundling and the upload, so a dry run
+#      # still builds, signs and attaches everything without anything leaving the
+#      # runner. As a second line of defence the Central credentials are replaced by
+#      # a placeholder during a dry run: should the upload ever happen regardless, it
+#      # fails on authentication instead of publishing a release. Signing does run, so
+#      # the GPG passphrase stays intact.
+#      - name: Deploy to Gitlab
+#        uses: ./.github/actions/publish-gitlab
+#        env:
+#          MAVEN_USERNAME: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_USERNAME }}
+#          MAVEN_TOKEN: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_TOKEN }}
+#          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+#        with:
+#          version: ${{ steps.release-version.outputs.version }}
+#          profiles: release
+#          skip-publishing: ${{ inputs.dryRun }}
+#
+#      - name: Summarize what would have been published
+#        if: ${{ inputs.dryRun }}
+#        run: |
+#          {
+#            echo "## Dry run — nothing was published"
+#            echo
+#            echo "Version: \`${{ steps.release-version.outputs.version }}\`"
+#            echo
+#            echo "Artifacts destined for the deployment bundle:"
+#            echo '```'
+#            ls -1 webrtc/target/*.jar webrtc/target/*.asc \
+#              webrtc-java-media/target/*.jar webrtc-java-media/target/*.asc \
+#              natives/*.asc 2>/dev/null || true
+#            echo '```'
+#          } >> "$GITHUB_STEP_SUMMARY"
+#
+#      - name: Upload the deployment bundle for inspection
+#        if: ${{ inputs.dryRun }}
+#        uses: actions/upload-artifact@v7
+#        with:
+#          name: deployment-bundle-dry-run
+#          path: |
+#            target/central-*/**
+#            webrtc/target/central-*/**
+#            webrtc/target/*.jar
+#            webrtc/target/*.asc
+#            webrtc-java-media/target/central-*/**
+#            webrtc-java-media/target/*.jar
+#            webrtc-java-media/target/*.asc
+#            natives/*.asc
+#          if-no-files-found: warn
+#          retention-days: 7
 
 #  publish-release:
 #    name: Publish GitHub release
