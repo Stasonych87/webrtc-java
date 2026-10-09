@@ -39,11 +39,11 @@ runs:
 
         for classifier in windows-x86_64 windows-aarch64 linux-x86_64 linux-aarch64 \
                           linux-aarch32 macos-x86_64 macos-aarch64; do
-          if [ ! -f "natives/webrtc-java-$VERSION-$classifier.jar" ]; then
+          if [ ! -f "./natives/webrtc-java-$VERSION-$classifier.jar" ]; then
             echo "::error::Missing native library jar for $classifier"
             status=1
           fi
-          if [ ! -f "natives/webrtc-java-media-$VERSION-$classifier.jar" ]; then
+          if [ ! -f "./natives/webrtc-java-media-$VERSION-$classifier.jar" ]; then
             echo "::error::Missing media native library jar for $classifier"
             status=1
           fi
