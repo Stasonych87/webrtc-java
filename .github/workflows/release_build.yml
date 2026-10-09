@@ -126,8 +126,8 @@ jobs:
           DEVELOPMENT_VERSION: ${{ inputs.developmentVersion }}
           EXPECTED_VERSION: ${{ steps.release-version.outputs.version }}
         run: |
-          mvn -B release:prepare -DskipTests -DpushChanges=false \
-            -DpreparationGoals="clean validate" \
+          mvn -B release:prepare -DskipTests -DpushChanges=false -Dgitlab-token=$GITLAB_TOKEN \
+            -s settings.xml -DpreparationGoals="clean validate" \
             -DdryRun=${{ inputs.dryRun }} \
             -DdevelopmentVersion="$DEVELOPMENT_VERSION"
 
