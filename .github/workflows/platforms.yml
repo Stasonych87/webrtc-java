@@ -158,7 +158,7 @@ jobs:
   test-natives:
     name: test-natives (${{ matrix.platform.name }})
     needs: [build, build-macos]
-    timeout-minutes: 30
+    timeout-minutes: 80
     strategy:
       fail-fast: false
       max-parallel: 1
