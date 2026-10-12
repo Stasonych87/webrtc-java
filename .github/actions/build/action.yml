@@ -119,13 +119,13 @@ runs:
         retention-days: ${{ inputs.retention-days }}
         overwrite: true
 
-    - name: Download the native library jars of all platforms
-      uses: actions/download-artifact@v8
-      with:
-        pattern: natives-*
-        path: natives
-        merge-multiple: true
-
-    - name: List Artifacts
-      run: ls -1 natives/*.jar natives/*.asc 2>/dev/null || true
-      shell: bash
+#    - name: Download the native library jars of all platforms
+#      uses: actions/download-artifact@v8
+#      with:
+#        pattern: natives-*
+#        path: natives
+#        merge-multiple: true
+#
+#    - name: List Artifacts
+#      run: ls -1 natives/*.jar natives/*.asc 2>/dev/null || true
+#      shell: bash
