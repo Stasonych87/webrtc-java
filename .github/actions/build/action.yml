@@ -118,3 +118,10 @@ runs:
         if-no-files-found: error
         retention-days: ${{ inputs.retention-days }}
         overwrite: true
+
+    - name: Download the native library jars of all platforms
+      uses: actions/download-artifact@v8
+      with:
+        pattern: natives-*
+        path: natives
+        merge-multiple: true
