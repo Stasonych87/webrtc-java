@@ -125,3 +125,7 @@ runs:
         pattern: natives-*
         path: natives
         merge-multiple: true
+
+    - name: List Artifacts
+      run: ls -1 natives/*.jar natives/*.asc 2>/dev/null || true
+      shell: bash
