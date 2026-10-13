@@ -13,8 +13,8 @@ on:
         type: boolean
         default: false
 
-env:
-  GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+#env:
+#  GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
 
 # Only the jobs that push commits, tags or the GitHub release get write access.
 permissions:
@@ -114,6 +114,12 @@ jobs:
         uses: rkalkani/wireguard-action@v2
         with:
           wg-config-file: ${{ secrets.WG_CONFIG }}
+
+      - name: Check Gitlab Url Status
+        uses: gpuliyar/check-url-action@v1.0.1
+        with:
+          url: https://gitlab.1c-connect.com/api/v4/projects/120/packages/
+
 
       # preparationGoals is "clean validate" instead of the default "clean verify":
       # verify would compile WebRTC and FFmpeg here, on a runner without their
@@ -234,6 +240,7 @@ jobs:
           MAVEN_USERNAME: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_USERNAME }}
           MAVEN_TOKEN: ${{ inputs.dryRun && 'dry-run-must-not-upload' || secrets.MAVEN_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         with:
           version: ${{ steps.release-version.outputs.version }}
           profiles: release
