@@ -131,7 +131,7 @@ jobs:
         run: |
           mvn -B release:prepare -DskipTests -DpushChanges=false \
             -DdryRun=true \
-            -DdevelopmentVersion="$DEVELOPMENT_VERSION -Dgitlab-token="$GITLAB_TOKEN" -s settings.xml"
+            -DdevelopmentVersion="$DEVELOPMENT_VERSION -Dgitlab-token="${GITLAB_TOKEN}" -s settings.xml"
           
           exit 1
 
