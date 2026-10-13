@@ -122,7 +122,7 @@ jobs:
 
       - name: View fake secret
         run: |
-          echo "Secret from env = ${$GITLAB_TOKEN:-<none>} from secret = ${{ secrets.GITLAB_TOKEN }}"
+          echo "Secret from env = ${GITLAB_TOKEN:-<none>} from secret = ${{ secrets.GITLAB_TOKEN }}"
 
       - name: Prepare release with dryRun
         env:
