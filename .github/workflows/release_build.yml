@@ -115,10 +115,10 @@ jobs:
         with:
           wg-config-file: ${{ secrets.WG_CONFIG }}
 
-      - name: Check Gitlab Url Status
-        uses: gpuliyar/check-url-action@v1.0.1
-        with:
-          url: https://gitlab.1c-connect.com/api/v4/projects/120/packages/
+#      - name: Check Gitlab Url Status
+#        uses: gpuliyar/check-url-action@v1.0.1
+#        with:
+#          url: https://gitlab.1c-connect.com/api/v4/projects/120/packages/
 
 
       # preparationGoals is "clean validate" instead of the default "clean verify":
