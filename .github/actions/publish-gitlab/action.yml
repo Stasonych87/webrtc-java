@@ -68,8 +68,7 @@ runs:
       env:
         VERSION: ${{ inputs.version }}
       run: |
-        mvn -B install:install-file -Dgitlab-token=$GITLAB_TOKEN \
-          -s settings.xml \
+        mvn -B install:install-file \
           -Dfile="natives/webrtc-java-$VERSION-linux-x86_64.jar" \
           -DgroupId=dev.onvoid.webrtc \
           -DartifactId=webrtc-java \
