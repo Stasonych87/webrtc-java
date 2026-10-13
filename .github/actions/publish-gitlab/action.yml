@@ -85,6 +85,7 @@ runs:
       env:
         PROFILES: ${{ inputs.profiles }}
         SKIP_PUBLISHING: ${{ inputs.skip-publishing }}
+        GITLAB_TOKEN: ${{ inputs.GITLAB_TOKEN }}
       run: >
         mvn -B deploy -pl .,webrtc,webrtc-java-media -DskipTests
         ${PROFILES:+-P$PROFILES}
