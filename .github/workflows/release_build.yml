@@ -131,7 +131,7 @@ jobs:
         run: |
           mvn -B release:prepare -DskipTests -DpushChanges=false \
             -DdryRun=true \
-            -DdevelopmentVersion="$DEVELOPMENT_VERSION -Dgitlab-token=${GITLAB_TOKEN} -s settings.xml"
+            -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dgitlab-token=$GITLAB_TOKEN -s settings.xml
           
           exit 1
 
@@ -259,7 +259,7 @@ jobs:
           version: ${{ steps.release-version.outputs.version }}
           profiles: release
           skip-publishing: ${{ inputs.dryRun }}
-          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+#          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
 
       - name: Summarize what would have been published
         if: ${{ inputs.dryRun }}

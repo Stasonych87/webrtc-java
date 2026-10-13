@@ -90,10 +90,10 @@ runs:
       env:
         PROFILES: ${{ inputs.profiles }}
         SKIP_PUBLISHING: ${{ inputs.skip-publishing }}
-        GITLAB_TOKEN: ${{ inputs.GITLAB_TOKEN }}
+#        GITLAB_TOKEN: ${{ inputs.GITLAB_TOKEN }}
       run: >
         mvn -B deploy -pl .,webrtc,webrtc-java-media -DskipTests
         ${PROFILES:+-P$PROFILES}
         -Dnatives.dir="$PWD/natives"
-        -DskipPublishing="$SKIP_PUBLISHING -Dgitlab-token=$GITLAB_TOKEN -s settings.xml"
+        -DskipPublishing="$SKIP_PUBLISHING" -Dgitlab-token=$GITLAB_TOKEN -s settings.xml
       shell: bash
