@@ -120,20 +120,17 @@ jobs:
 #        with:
 #          url: https://gitlab.1c-connect.com/api/v4/projects/120/packages/
 
-      - name: View fake secret
-        run: |
-          echo "Secret from env = ${GITLAB_TOKEN:-<none>} from secret = ${{ secrets.GITLAB_TOKEN }}"
-
-      - name: Prepare release with dryRun
-        env:
-          DEVELOPMENT_VERSION: ${{ inputs.developmentVersion }}
-          EXPECTED_VERSION: ${{ steps.release-version.outputs.version }}
-        run: |
-          mvn -B release:prepare -DskipTests -DpushChanges=false \
-            -DdryRun=true \
-            -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dgitlab-token=$GITLAB_TOKEN -s settings.xml
-          
-          exit 1
+#
+#      - name: Prepare release with dryRun
+#        env:
+#          DEVELOPMENT_VERSION: ${{ inputs.developmentVersion }}
+#          EXPECTED_VERSION: ${{ steps.release-version.outputs.version }}
+#        run: |
+#          mvn -B release:prepare -DskipTests -DpushChanges=false \
+#            -DdryRun=true \
+#            -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dgitlab-token=$GITLAB_TOKEN -s settings.xml
+#
+#          exit 1
 
 
       # preparationGoals is "clean validate" instead of the default "clean verify":
