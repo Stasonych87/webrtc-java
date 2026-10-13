@@ -56,10 +56,10 @@ runs:
         exit $status
       shell: bash
 
-#    - name: Setup WireGuard VPN
-#      uses: rkalkani/wireguard-action@v2
-#      with:
-#        wg-config-file: ${{ secrets.WG_CONFIG }}
+    #    - name: Setup WireGuard VPN
+    #      uses: rkalkani/wireguard-action@v2
+    #      with:
+    #        wg-config-file: ${{ secrets.WG_CONFIG }}
 
     # The webrtc module depends on its own native library jar for the host
     # platform. That dependency is normally installed by webrtc-jni, which is kept
@@ -76,6 +76,11 @@ runs:
           -Dclassifier=linux-x86_64 \
           -Dpackaging=jar \
           -DgeneratePom=false
+      shell: bash
+
+    - name: View fake secret
+      run: |
+        echo "Secret from inputs = ${{ inputs.GITLAB_TOKEN }}"
       shell: bash
 
     # natives.dir makes webrtc and webrtc-java-media attach the jars of all
