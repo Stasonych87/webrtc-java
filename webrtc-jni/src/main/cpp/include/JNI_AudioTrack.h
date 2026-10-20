@@ -9,6 +9,14 @@ extern "C" {
 #endif
 	/*
 	 * Class:     dev_onvoid_webrtc_media_audio_AudioTrack
+	 * Method:    setVolumeInternal
+	 * Signature: (D)V
+	 */
+	JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_media_audio_AudioTrack_setVolumeInternal
+	(JNIEnv *, jobject, jdouble);
+
+	/*
+	 * Class:     dev_onvoid_webrtc_media_audio_AudioTrack
 	 * Method:    getSignalLevel
 	 * Signature: ()I
 	 */
@@ -18,10 +26,10 @@ extern "C" {
 	/*
 	 * Class:     dev_onvoid_webrtc_media_audio_AudioTrack
 	 * Method:    addSinkInternal
-	 * Signature: (Ldev/onvoid/webrtc/media/audio/AudioTrackSink;)J
+	 * Signature: (Ldev/onvoid/webrtc/media/audio/AudioTrackSink;Z)J
 	 */
 	JNIEXPORT jlong JNICALL Java_dev_onvoid_webrtc_media_audio_AudioTrack_addSinkInternal
-	(JNIEnv *, jobject, jobject);
+	(JNIEnv *, jobject, jobject, jboolean);
 
 	/*
 	 * Class:     dev_onvoid_webrtc_media_audio_AudioTrack

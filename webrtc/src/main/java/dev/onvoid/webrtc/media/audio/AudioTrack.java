@@ -19,6 +19,7 @@ package dev.onvoid.webrtc.media.audio;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
+import dev.onvoid.webrtc.RTCRtpPacketInfo;
 import dev.onvoid.webrtc.media.MediaStreamTrack;
 
 import java.util.IdentityHashMap;
@@ -57,9 +58,23 @@ public class AudioTrack extends MediaStreamTrack {
 			return;
 		}
 
-		final long nativeSink = addSinkInternal(sink);
+		final long nativeSink = addSinkInternal(sink, takesPacketInfos(sink));
 
 		sinks.put(sink, nativeSink);
+	}
+
+	/**
+	 * Whether the sink implements the method that receives the RTP packets,
+	 * which are only collected for a sink that does.
+	 */
+	private static boolean takesPacketInfos(AudioTrackSink sink) {
+		try {
+			return sink.getClass().getMethod("onData", byte[].class, int.class, int.class, int.class,
+					int.class, RTCRtpPacketInfo[].class).getDeclaringClass() != AudioTrackSink.class;
+		}
+		catch (NoSuchMethodException e) {
+			return false;
+		}
 	}
 
 	/**
@@ -85,7 +100,28 @@ public class AudioTrack extends MediaStreamTrack {
 	 */
 	public native int getSignalLevel();
 
-	private native long addSinkInternal(AudioTrackSink sink);
+	/**
+	 * Sets the playout volume of a remote audio track, the one of an {@link
+	 * dev.onvoid.webrtc.RTCRtpReceiver}, from 0 (silent) to 10, where 1 plays
+	 * the audio as received. Values above 1 amplify it. It applies to what the
+	 * audio device plays, not to the audio passed to an {@link AudioTrackSink}.
+	 * A local track ignores it.
+	 *
+	 * @param volume The volume, from 0 to 10.
+	 *
+	 * @throws IllegalArgumentException If the volume is outside 0 to 10.
+	 */
+	public void setVolume(double volume) {
+		if (!(volume >= 0 && volume <= 10)) {
+			throw new IllegalArgumentException("Volume must be between 0 and 10: " + volume);
+		}
+
+		setVolumeInternal(volume);
+	}
+
+	private native void setVolumeInternal(double volume);
+
+	private native long addSinkInternal(AudioTrackSink sink, boolean packetInfos);
 
 	private native void removeSinkInternal(long sinkHandle);
 

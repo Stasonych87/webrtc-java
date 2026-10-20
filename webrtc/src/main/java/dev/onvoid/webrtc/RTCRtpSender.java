@@ -31,6 +31,14 @@ import dev.onvoid.webrtc.media.MediaStreamTrack;
  */
 public class RTCRtpSender extends DisposableNativeObject {
 
+	/*
+	 * The native observer set through this object, owned by it and freed when
+	 * replaced, removed or disposed.
+	 */
+	@SuppressWarnings("unused")
+	private long observerHandle;
+
+
 	/**
 	 * Constructor to be used by the native api.
 	 */
@@ -39,12 +47,38 @@ public class RTCRtpSender extends DisposableNativeObject {
 	}
 
 	/**
+	 * Returns the ID of this sender, which is unique within its peer
+	 * connection. It is the same for all RTCRtpSender objects of the same
+	 * sender.
+	 *
+	 * @return The ID of this sender.
+	 */
+	public native String getId();
+
+	/**
+	 * Sets the observer that is told when this sender sends its first RTP
+	 * packet, replacing any observer set before. {@code null} removes the
+	 * observer.
+	 * <p>
+	 * A sender has one observer. It belongs to the RTCRtpSender object it was
+	 * set through: disposing that object removes it, also when it was set
+	 * through another object of the same sender in the meantime, so set it
+	 * through one object.
+	 *
+	 * @param observer The observer, or {@code null}.
+	 */
+	public native void setObserver(RTCRtpSenderObserver observer);
+
+	/**
 	 * Returns the track that is associated with this RTCRtpSender. If track is
 	 * ended, or if the track's output is disabled, i.e. the track is disabled
 	 * and/or muted, the RTCRtpSender MUST send silence (audio), black frames
 	 * (video) or a zero-information-content equivalent. In the case of video,
 	 * the RTCRtpSender SHOULD send one black frame per second. If track is
 	 * {@code null} then the RTCRtpSender does not send.
+	 * <p>
+	 * The returned object is a view of the sender's track; see
+	 * {@link MediaStreamTrack#dispose()}.
 	 *
 	 * @return The media track associated with this sender.
 	 */
@@ -103,6 +137,15 @@ public class RTCRtpSender extends DisposableNativeObject {
 	public native void setStreams(List<String> streamIds);
 
 	/**
+	 * Returns the IDs of the media streams associated with this sender's
+	 * track, as given to {@link RTCPeerConnection#addTrack addTrack}, the
+	 * {@link RTCRtpTransceiverInit} or {@link #setStreams}.
+	 *
+	 * @return The IDs of the media streams.
+	 */
+	public native List<String> getStreams();
+
+	/**
 	 * Returns the RTCDtmfSender associated with this RTCRtpSender. The RTCDtmfSender
 	 * enables the transmission of DTMF (Dual-Tone Multi-Frequency) tones over the
 	 * RTCPeerConnection.
@@ -139,6 +182,64 @@ public class RTCRtpSender extends DisposableNativeObject {
 	 *                          connection is negotiated.
 	 */
 	public native void generateKeyFrame();
+
+	/**
+	 * Creates an injector that sends video frames that are already encoded
+	 * on this sender, in place of a track.
+	 *
+	 * @param observer The observer for the sender's key frame requests and
+	 *                 bitrate changes, or {@code null} for none.
+	 *
+	 * @return The injector, to be disposed when no longer used.
+	 *
+	 * @throws IllegalStateException If this is not a video sender, or it is
+	 *                               stopped, has a track or has an injector.
+	 */
+	public RTCEncodedVideoFrameInjector createEncodedVideoFrameInjector(
+			RTCEncodedVideoFrameInjectorObserver observer) {
+		RTCEncodedVideoFrameInjector injector = createVideoFrameInjector(observer);
+
+		if (injector == null) {
+			throw new IllegalStateException("An encoded video frame injector needs a video sender that is "
+					+ "not stopped and has no track and no injector");
+		}
+
+		return injector;
+	}
+
+	/**
+	 * Creates an injector that sends audio frames that are already encoded
+	 * on this sender, in place of a track.
+	 * <p>
+	 * Do not inject audio through a factory that sends audio captured by its
+	 * audio device module: WebRTC passes captured audio to every audio sender
+	 * that sends, and it would drive the injecting sender as well.
+	 *
+	 * @param observer The observer for the sender's target bitrate changes,
+	 *                 or {@code null} for none.
+	 *
+	 * @return The injector, to be disposed when no longer used.
+	 *
+	 * @throws IllegalStateException If this is not an audio sender, or it is
+	 *                               stopped, has a track or has an injector.
+	 */
+	public RTCEncodedAudioFrameInjector createEncodedAudioFrameInjector(
+			RTCEncodedAudioFrameInjectorObserver observer) {
+		RTCEncodedAudioFrameInjector injector = createAudioFrameInjector(observer);
+
+		if (injector == null) {
+			throw new IllegalStateException("An encoded audio frame injector needs an audio sender that is "
+					+ "not stopped and has no track and no injector");
+		}
+
+		return injector;
+	}
+
+	private native RTCEncodedVideoFrameInjector createVideoFrameInjector(
+			RTCEncodedVideoFrameInjectorObserver observer);
+
+	private native RTCEncodedAudioFrameInjector createAudioFrameInjector(
+			RTCEncodedAudioFrameInjectorObserver observer);
 
 	/**
 	 * Releases the native reference held by this RTCRtpSender instance.

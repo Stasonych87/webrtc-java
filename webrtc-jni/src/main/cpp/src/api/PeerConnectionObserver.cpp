@@ -15,6 +15,7 @@
  */
 
 #include "api/PeerConnectionObserver.h"
+#include "api/RTCCandidatePairChangeEvent.h"
 #include "api/RTCIceCandidate.h"
 #include "api/RTCPeerConnectionIceErrorEvent.h"
 #include "api/WebRTCUtils.h"
@@ -44,11 +45,16 @@ namespace jni
 			return;
 		}
 
-		auto jState = JavaEnums::toJava(env, state);
+		try {
+			auto jState = JavaEnums::toJava(env, state);
 
-		env->CallVoidMethod(observer, javaClass->onConnectionChange, jState.get());
+			env->CallVoidMethod(observer, javaClass->onConnectionChange, jState.get());
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState state)
@@ -59,11 +65,16 @@ namespace jni
 			return;
 		}
 
-		auto jState = JavaEnums::toJava(env, state);
+		try {
+			auto jState = JavaEnums::toJava(env, state);
 
-		env->CallVoidMethod(observer, javaClass->onSignalingChange, jState.get());
+			env->CallVoidMethod(observer, javaClass->onSignalingChange, jState.get());
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnTrack(webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
@@ -74,15 +85,20 @@ namespace jni
 			return;
 		}
 
-		// transceiver is passed by value, so this call owns one reference on
-		// it; transfer that reference into the Java wrapper, which disposes
-		// it, instead of releasing it right back when transceiver goes out
-		// of scope and leaving the wrapper's pointer unowned.
-		auto jTransceiver = JavaFactories::create(env, transceiver.release());
+		try {
+			// transceiver is passed by value, so this call owns one reference on
+			// it; transfer that reference into the Java wrapper, which disposes
+			// it, instead of releasing it right back when transceiver goes out
+			// of scope and leaving the wrapper's pointer unowned.
+			auto jTransceiver = JavaFactories::create(env, transceiver.release());
 
-		env->CallVoidMethod(observer, javaClass->onTrack, jTransceiver.get());
+			env->CallVoidMethod(observer, javaClass->onTrack, jTransceiver.get());
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnAddTrack(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver, const std::vector<webrtc::scoped_refptr<webrtc::MediaStreamInterface>> & streams)
@@ -110,7 +126,7 @@ namespace jni
 			ThrowCxxJavaException(env);
 		}
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnRemoveTrack(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
@@ -121,15 +137,20 @@ namespace jni
 			return;
 		}
 
-		// receiver is passed by value, so this call owns one reference on
-		// it; transfer that reference into the Java wrapper, which disposes
-		// it, instead of releasing it right back when receiver goes out of
-		// scope and leaving the wrapper's pointer unowned.
-		auto jReceiver = JavaFactories::create(env, receiver.release());
+		try {
+			// receiver is passed by value, so this call owns one reference on
+			// it; transfer that reference into the Java wrapper, which disposes
+			// it, instead of releasing it right back when receiver goes out of
+			// scope and leaving the wrapper's pointer unowned.
+			auto jReceiver = JavaFactories::create(env, receiver.release());
 
-		env->CallVoidMethod(observer, javaClass->onRemoveTrack, jReceiver.get());
+			env->CallVoidMethod(observer, javaClass->onRemoveTrack, jReceiver.get());
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnDataChannel(webrtc::scoped_refptr<webrtc::DataChannelInterface> channel)
@@ -140,11 +161,16 @@ namespace jni
 			return;
 		}
 
-		auto jDataChannel = JavaFactories::create(env, channel.release());
+		try {
+			auto jDataChannel = JavaFactories::create(env, channel.release());
 
-		env->CallVoidMethod(observer, javaClass->onDataChannel, jDataChannel.get());
+			env->CallVoidMethod(observer, javaClass->onDataChannel, jDataChannel.get());
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnRenegotiationNeeded()
@@ -157,7 +183,7 @@ namespace jni
 
 		env->CallVoidMethod(observer, javaClass->onRenegotiationNeeded);
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState state)
@@ -168,11 +194,16 @@ namespace jni
 			return;
 		}
 
-		auto jState = JavaEnums::toJava(env, state);
+		try {
+			auto jState = JavaEnums::toJava(env, state);
 
-		env->CallVoidMethod(observer, javaClass->onIceConnectionChange, jState.get());
+			env->CallVoidMethod(observer, javaClass->onIceConnectionChange, jState.get());
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState state)
@@ -183,11 +214,16 @@ namespace jni
 			return;
 		}
 
-		auto jState = JavaEnums::toJava(env, state);
+		try {
+			auto jState = JavaEnums::toJava(env, state);
 
-		env->CallVoidMethod(observer, javaClass->onIceGatheringChange, jState.get());
+			env->CallVoidMethod(observer, javaClass->onIceGatheringChange, jState.get());
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnIceCandidate(const webrtc::IceCandidateInterface * candidate)
@@ -198,11 +234,16 @@ namespace jni
 			return;
 		}
 
-		JavaLocalRef<jobject> jCandidate = RTCIceCandidate::toJava(env, candidate);
+		try {
+			JavaLocalRef<jobject> jCandidate = RTCIceCandidate::toJava(env, candidate);
 
-		env->CallVoidMethod(observer, javaClass->onIceCandidate, jCandidate.get());
+			env->CallVoidMethod(observer, javaClass->onIceCandidate, jCandidate.get());
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnIceCandidateError(const std::string & address, int port, const std::string & url, int error_code, const std::string & error_text)
@@ -213,11 +254,38 @@ namespace jni
 			return;
 		}
 
-		JavaLocalRef<jobject> event = RTCPeerConnectionIceErrorEvent::toJava(env, address, port, url, error_code, error_text);
+		try {
+			JavaLocalRef<jobject> event = RTCPeerConnectionIceErrorEvent::toJava(env, address, port, url, error_code, error_text);
 
-		env->CallVoidMethod(observer, javaClass->onIceCandidateError, event.get());
+			env->CallVoidMethod(observer, javaClass->onIceCandidateError, event.get());
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
+	}
+
+	void PeerConnectionObserver::OnIceCandidateRemoved(const webrtc::IceCandidate * candidate)
+	{
+		JNIEnv * env = AttachCurrentThread();
+
+		if (env == nullptr || candidate == nullptr) {
+			return;
+		}
+
+		try {
+			JavaLocalRef<jobject> jCandidate = RTCIceCandidate::toJava(env, candidate);
+
+			if (!env->ExceptionCheck()) {
+				env->CallVoidMethod(observer, javaClass->onIceCandidateRemoved, jCandidate.get());
+			}
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
+
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnIceConnectionReceivingChange(bool receiving)
@@ -230,7 +298,7 @@ namespace jni
 
 		env->CallVoidMethod(observer, javaClass->onIceConnectionReceivingChange, receiving);
 
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	void PeerConnectionObserver::OnIceSelectedCandidatePairChanged(const webrtc::CandidatePairChangeEvent & event)
@@ -241,21 +309,18 @@ namespace jni
 			return;
 		}
 
-		const webrtc::Candidate & remote = event.selected_candidate_pair.remote_candidate();
+		try {
+			JavaLocalRef<jobject> jEvent = RTCCandidatePairChangeEvent::toJava(env, event);
 
-		std::string ip = remote.address().ipaddr().ToString();
-		int port = remote.address().port();
+			if (!env->ExceptionCheck()) {
+				env->CallVoidMethod(observer, javaClass->onSelectedCandidatePairChanged, jEvent.get());
+			}
+		}
+		catch (...) {
+			ThrowCxxJavaException(env);
+		}
 
-		const auto typeName = remote.type_name();
-		std::string type(typeName.data(), typeName.size());
-
-		JavaLocalRef<jstring> jAddress = JavaString::toJava(env, ip);
-		JavaLocalRef<jstring> jType = JavaString::toJava(env, type);
-
-		env->CallVoidMethod(observer, javaClass->onSelectedCandidatePairChanged,
-			jAddress.get(), static_cast<jint>(port), jType.get());
-
-		ExceptionCheck(env);
+		ReportPendingException(env);
 	}
 
 	PeerConnectionObserver::JavaPeerConnectionObserverClass::JavaPeerConnectionObserverClass(JNIEnv * env)
@@ -273,7 +338,8 @@ namespace jni
 		onIceGatheringChange = GetMethod(env, cls, "onIceGatheringChange", "(L" PKG "RTCIceGatheringState;)V");
 		onIceCandidate = GetMethod(env, cls, "onIceCandidate", "(L" PKG "RTCIceCandidate;)V");
 		onIceCandidateError = GetMethod(env, cls, "onIceCandidateError", "(L" PKG "RTCPeerConnectionIceErrorEvent;)V");
+		onIceCandidateRemoved = GetMethod(env, cls, "onIceCandidateRemoved", "(L" PKG "RTCIceCandidate;)V");
 		onIceConnectionReceivingChange = GetMethod(env, cls, "onIceConnectionReceivingChange", "(Z)V");
-		onSelectedCandidatePairChanged = GetMethod(env, cls, "onSelectedCandidatePairChanged", "(Ljava/lang/String;ILjava/lang/String;)V");
+		onSelectedCandidatePairChanged = GetMethod(env, cls, "onSelectedCandidatePairChanged", "(L" PKG "RTCCandidatePairChangeEvent;)V");
 	}
 }

@@ -1,5 +1,6 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/devopvoid/webrtc-java/build.yml?label=Build&logo=github)](https://github.com/devopvoid/webrtc-java/actions)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.onvoid.webrtc/webrtc-java?label=Maven%20Central&logo=apache-maven)](https://search.maven.org/artifact/dev.onvoid.webrtc/webrtc-java)
+[![Docs](https://img.shields.io/badge/Docs-Next_Version-violet)](https://jrtc.dev/next/)
 
 <p align="center">
   <img alt="webrtc-java" width="100px" src="https://jrtc.dev/logo.png" />
@@ -16,9 +17,13 @@ The library provides a comprehensive set of Java classes that map to the WebRTC 
 - **Cross-platform support** - Works on Windows, macOS, and Linux (x64, ARM, ARM64)
 - **Media capabilities** - Audio and video capture from cameras and microphones
 - **Desktop capture** - Screen and application window sharing
+- **Video processing** - Change camera and desktop frames before they are sent, e.g. to blur a background, draw an overlay or blank out part of the screen
+- **Hardware video codecs** - Encode and decode H.264, H.265, VP9 and AV1 on the GPU with NVENC/NVDEC, Media Foundation, VA-API and VideoToolbox, falling back to software
+- **Custom video codecs** - Plug video encoders and decoders written in Java into WebRTC next to the built-in ones, or limit the codecs a factory offers
 - **Media file playback** - Send video and audio files over a peer connection in place of a camera and microphone, with the optional FFmpeg-based `webrtc-java-media` module
 - **Call recording** - Record what a peer connection sends or receives into MKV, WebM or MP4 files, without re-encoding, with the `webrtc-java-media` module
 - **Encoded transforms** - Read, change or drop encoded audio and video frames on their way through a sender or receiver, e.g. for end-to-end encryption, like insertable streams in the browser
+- **Encoded frame injection** - Send audio and video that is already encoded, such as a camera's H.264 stream or a recording, through a sender without re-encoding it
 - **Data channels** - Bidirectional peer-to-peer data exchange
 - **Statistics API** - Detailed metrics for monitoring connection quality
 - **Simple integration** - Available as a Maven dependency
@@ -36,6 +41,7 @@ For more detailed information, check out the documentation:
 - [Encoded Transforms](https://jrtc.dev/guide/advanced/encoded-transforms) - Reading and changing encoded frames, e.g. for end-to-end encryption
 - [Video Codecs](https://jrtc.dev/guide/advanced/video-codecs) - Adding video codecs implemented in Java, or limiting the built-in ones
 - [Build Notes](https://jrtc.dev/guide/build) - Instructions for building the library from source
+- [Unreleased Docs](https://jrtc.dev/next/) - Documentation of the main branch, including features not released yet
 
 ## License
 

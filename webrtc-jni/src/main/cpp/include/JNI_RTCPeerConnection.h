@@ -57,6 +57,14 @@ extern "C" {
 
 	/*
 	 * Class:     dev_onvoid_webrtc_RTCPeerConnection
+	 * Method:    addTransceiverOfType
+	 * Signature: (Ldev/onvoid/webrtc/media/MediaType;Ldev/onvoid/webrtc/RTCRtpTransceiverInit;)Ldev/onvoid/webrtc/RTCRtpTransceiver;
+	 */
+	JNIEXPORT jobject JNICALL Java_dev_onvoid_webrtc_RTCPeerConnection_addTransceiverOfType
+	(JNIEnv *, jobject, jobject, jobject);
+
+	/*
+	 * Class:     dev_onvoid_webrtc_RTCPeerConnection
 	 * Method:    createDataChannel
 	 * Signature: (Ljava/lang/String;Ldev/onvoid/webrtc/RTCDataChannelInit;)Ldev/onvoid/webrtc/RTCDataChannel;
 	 */
@@ -137,6 +145,14 @@ extern "C" {
 
 	/*
 	 * Class:     dev_onvoid_webrtc_RTCPeerConnection
+	 * Method:    setLocalDescriptionImplicit
+	 * Signature: (Ldev/onvoid/webrtc/SetSessionDescriptionObserver;)V
+	 */
+	JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_RTCPeerConnection_setLocalDescriptionImplicit
+	(JNIEnv *, jobject, jobject);
+
+	/*
+	 * Class:     dev_onvoid_webrtc_RTCPeerConnection
 	 * Method:    setRemoteDescription
 	 * Signature: (Ldev/onvoid/webrtc/RTCSessionDescription;Ldev/onvoid/webrtc/SetSessionDescriptionObserver;)V
 	 */
@@ -150,6 +166,46 @@ extern "C" {
 	 */
 	JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_RTCPeerConnection_addIceCandidate
 	(JNIEnv *, jobject, jobject);
+
+	/*
+	 * Class:     dev_onvoid_webrtc_RTCPeerConnection
+	 * Method:    addIceCandidateWithObserver
+	 * Signature: (Ldev/onvoid/webrtc/RTCIceCandidate;Ldev/onvoid/webrtc/AddIceCandidateObserver;)V
+	 */
+	JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_RTCPeerConnection_addIceCandidateWithObserver
+	(JNIEnv *, jobject, jobject, jobject);
+
+	/*
+	 * Class:     dev_onvoid_webrtc_RTCPeerConnection
+	 * Method:    removeIceCandidate
+	 * Signature: (Ldev/onvoid/webrtc/RTCIceCandidate;)Z
+	 */
+	JNIEXPORT jboolean JNICALL Java_dev_onvoid_webrtc_RTCPeerConnection_removeIceCandidate
+	(JNIEnv *, jobject, jobject);
+
+	/*
+	 * Class:     dev_onvoid_webrtc_RTCPeerConnection
+	 * Method:    setBitrate
+	 * Signature: (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)V
+	 */
+	JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_RTCPeerConnection_setBitrate
+	(JNIEnv *, jobject, jobject, jobject, jobject);
+
+	/*
+	 * Class:     dev_onvoid_webrtc_RTCPeerConnection
+	 * Method:    setAudioPlayout
+	 * Signature: (Z)V
+	 */
+	JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_RTCPeerConnection_setAudioPlayout
+	(JNIEnv *, jobject, jboolean);
+
+	/*
+	 * Class:     dev_onvoid_webrtc_RTCPeerConnection
+	 * Method:    setAudioRecording
+	 * Signature: (Z)V
+	 */
+	JNIEXPORT void JNICALL Java_dev_onvoid_webrtc_RTCPeerConnection_setAudioRecording
+	(JNIEnv *, jobject, jboolean);
 
 	/*
 	 * Class:     dev_onvoid_webrtc_RTCPeerConnection

@@ -15,18 +15,40 @@
  */
 
 #include "api/AudioTrackSink.h"
+#include "api/RTCRtpPacketInfo.h"
+#include "api/WebRTCUtils.h"
 #include "JavaClasses.h"
+#include "JavaUtils.h"
 #include "JNI_WebRTC.h"
 
 namespace jni
 {
-	AudioTrackSink::AudioTrackSink(JNIEnv * env, const JavaGlobalRef<jobject> & sink) :
+	AudioTrackSink::AudioTrackSink(JNIEnv * env, const JavaGlobalRef<jobject> & sink, bool packetInfos) :
 		sink(sink),
+		packetInfos(packetInfos),
 		javaClass(JavaClasses::get<JavaAudioTrackSinkClass>(env))
 	{
 	}
 
 	void AudioTrackSink::OnData(const void * data, int bitsPerSample, int sampleRate, size_t channels, size_t frames)
+	{
+		Deliver(data, bitsPerSample, sampleRate, channels, frames, nullptr);
+	}
+
+	void AudioTrackSink::OnData(const void * data, int bitsPerSample, int sampleRate, size_t channels, size_t frames,
+		std::optional<int64_t> absoluteCaptureTimestampMs)
+	{
+		Deliver(data, bitsPerSample, sampleRate, channels, frames, nullptr);
+	}
+
+	void AudioTrackSink::OnData(const void * data, int bitsPerSample, int sampleRate, size_t channels, size_t frames,
+		std::optional<int64_t> absoluteCaptureTimestampMs, const webrtc::RtpPacketInfos & packetInfos)
+	{
+		Deliver(data, bitsPerSample, sampleRate, channels, frames, &packetInfos);
+	}
+
+	void AudioTrackSink::Deliver(const void * data, int bitsPerSample, int sampleRate, size_t channels, size_t frames,
+		const webrtc::RtpPacketInfos * infos)
 	{
 		JNIEnv * env = AttachCurrentThread();
 
@@ -37,12 +59,32 @@ namespace jni
 		const jbyte * buffer = static_cast<const jbyte *>(data);
 		jsize dataSize = static_cast<jsize>(frames * channels * (bitsPerSample / 8));
 
-		jbyteArray dataArray = env->NewByteArray(dataSize);
-		env->SetByteArrayRegion(dataArray, 0, dataSize, buffer);
+		JavaLocalRef<jbyteArray> dataArray(env, env->NewByteArray(dataSize));
 
-		env->CallVoidMethod(sink, javaClass->onData, dataArray, bitsPerSample, sampleRate, channels, frames);
-		ExceptionCheck(env);
-		env->DeleteLocalRef(dataArray);
+		if (dataArray.get() != nullptr) {
+			env->SetByteArrayRegion(dataArray.get(), 0, dataSize, buffer);
+
+			if (packetInfos) {
+				try {
+					JavaLocalRef<jobjectArray> infoArray = (infos != nullptr)
+						? RTCRtpPacketInfo::toJavaArray(env, *infos)
+						: RTCRtpPacketInfo::toJavaArray(env, webrtc::RtpPacketInfos());
+
+					env->CallVoidMethod(sink, javaClass->onDataWithPacketInfos, dataArray.get(),
+						static_cast<jint>(bitsPerSample), static_cast<jint>(sampleRate),
+						static_cast<jint>(channels), static_cast<jint>(frames), infoArray.get());
+				}
+				catch (...) {
+					ThrowCxxJavaException(env);
+				}
+			}
+			else {
+				env->CallVoidMethod(sink, javaClass->onData, dataArray.get(), static_cast<jint>(bitsPerSample),
+					static_cast<jint>(sampleRate), static_cast<jint>(channels), static_cast<jint>(frames));
+			}
+		}
+
+		ReportPendingException(env);
 	}
 
 	AudioTrackSink::JavaAudioTrackSinkClass::JavaAudioTrackSinkClass(JNIEnv * env)
@@ -50,5 +92,6 @@ namespace jni
 		jclass cls = FindClass(env, PKG_AUDIO"AudioTrackSink");
 
 		onData = GetMethod(env, cls, "onData", "([BIIII)V");
+		onDataWithPacketInfos = GetMethod(env, cls, "onData", "([BIIII[L" PKG "RTCRtpPacketInfo;)V");
 	}
 }

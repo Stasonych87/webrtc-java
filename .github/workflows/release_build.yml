@@ -1,4 +1,4 @@
-name: Release
+name: Release Build
 
 on:
   workflow_dispatch:
@@ -80,29 +80,29 @@ jobs:
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       # Written outside the checkout, which release:prepare requires to be clean.
-#      - name: Generate the release notes
-#        uses: orhun/git-cliff-action@v4
-#        id: git-cliff
-#        with:
-#          config: .github/changelog/cliff-release.toml
-#          args: -v -u --strip footer --tag ${{ steps.release-version.outputs.tag }} --use-branch-tags
-#        env:
-#          OUTPUT: ${{ runner.temp }}/release-notes.md
-#
-#      - name: Update CHANGELOG.md
-#        uses: orhun/git-cliff-action@v4
-#        with:
-#          config: .github/changelog/cliff.toml
-#          args: -v --tag ${{ steps.release-version.outputs.tag }} --use-branch-tags
-#        env:
-#          OUTPUT: CHANGELOG.md
-#
-#      - name: Commit CHANGELOG.md
-#        env:
-#          RELEASE_TAG: ${{ steps.release-version.outputs.tag }}
-#        run: |
-#          git add CHANGELOG.md
-#          git commit -m "chore(release): Update CHANGELOG.md for $RELEASE_TAG"
+      #      - name: Generate the release notes
+      #        uses: orhun/git-cliff-action@v4
+      #        id: git-cliff
+      #        with:
+      #          config: .github/changelog/cliff-release.toml
+      #          args: -v -u --strip footer --tag ${{ steps.release-version.outputs.tag }} --use-branch-tags
+      #        env:
+      #          OUTPUT: ${{ runner.temp }}/release-notes.md
+      #
+      #      - name: Update CHANGELOG.md
+      #        uses: orhun/git-cliff-action@v4
+      #        with:
+      #          config: .github/changelog/cliff.toml
+      #          args: -v --tag ${{ steps.release-version.outputs.tag }} --use-branch-tags
+      #        env:
+      #          OUTPUT: CHANGELOG.md
+      #
+      #      - name: Commit CHANGELOG.md
+      #        env:
+      #          RELEASE_TAG: ${{ steps.release-version.outputs.tag }}
+      #        run: |
+      #          git add CHANGELOG.md
+      #          git commit -m "chore(release): Update CHANGELOG.md for $RELEASE_TAG"
 
       - name: Set up Java
         uses: actions/setup-java@v6
@@ -233,7 +233,6 @@ jobs:
 
           echo "Version to publish: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          
 
       - name: Setup WireGuard VPN
         uses: rkalkani/wireguard-action@v2
@@ -256,7 +255,6 @@ jobs:
           version: ${{ steps.release-version.outputs.version }}
           profiles: release
           skip-publishing: ${{ inputs.dryRun }}
-#          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
 
       - name: Summarize what would have been published
         if: ${{ inputs.dryRun }}

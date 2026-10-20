@@ -62,12 +62,14 @@ config.id = -1;  // Let WebRTC assign an ID
 // Configure sub-protocol (default: null)
 config.protocol = "my-protocol";  // Optional sub-protocol name
 
-// Configure priority (default: LOW)
-config.priority = RTCPriorityType.LOW;
+// Configure priority (default: LOW), announced to the remote peer
+config.priority = RTCPriorityType.HIGH;
 
 // Create the data channel with this configuration
 RTCDataChannel dataChannel = peerConnection.createDataChannel("myChannel", config);
 ```
+
+`getPriority()` returns a channel's priority; a channel the remote peer opened has the priority it announced. WebRTC only uses the priority to share the connection between channels when SCTP message interleaving is on, which needs the field trial `WebRTC-DataChannelMessageInterleaving/Enabled/` on both peers (see [Field Trials](/guide/advanced/field-trials)). Without it, channels take turns regardless of priority.
 
 ## Handling Data Channel Events
 
@@ -201,7 +203,7 @@ dataChannel.sendAsync(binaryChannelBuffer, new RTCDataChannelSendObserver() {
 });
 ```
 
-The observer is called exactly once, normally on the native network thread, and with a failure if the operation is discarded while the channel shuts down. Success means the message was queued locally, not that the peer received it. Do not block in the callbacks or call other WebRTC methods from them synchronously; dispatch further work to an executor of your own. Without an observer, `sendAsync` logs failures and reports nothing to the caller.
+The observer is called exactly once, with a failure if the operation is discarded while the channel shuts down. Success means the message was queued locally, not that the peer received it. Callbacks run on a native callback thread shared with other WebRTC observers; they may call other WebRTC methods, but should not block, so dispatch long work to an executor of your own. Without an observer, `sendAsync` logs failures and reports nothing to the caller.
 
 ### Receiving Data
 

@@ -26,10 +26,16 @@ import dev.onvoid.webrtc.media.audio.AudioProcessing;
 import dev.onvoid.webrtc.media.audio.AudioTrackSource;
 import dev.onvoid.webrtc.media.audio.AudioTrack;
 import dev.onvoid.webrtc.media.audio.CustomAudioSource;
+import dev.onvoid.webrtc.media.audio.codec.AudioDecoderFactory;
+import dev.onvoid.webrtc.media.audio.codec.AudioEncoderFactory;
+import dev.onvoid.webrtc.media.audio.codec.BuiltinAudioDecoderFactory;
+import dev.onvoid.webrtc.media.audio.codec.BuiltinAudioEncoderFactory;
 import dev.onvoid.webrtc.media.video.VideoTrackSource;
 import dev.onvoid.webrtc.media.video.VideoTrack;
 import dev.onvoid.webrtc.media.video.codec.DefaultVideoDecoderFactory;
 import dev.onvoid.webrtc.media.video.codec.DefaultVideoEncoderFactory;
+import dev.onvoid.webrtc.media.video.codec.HardwareVideoDecoderFactory;
+import dev.onvoid.webrtc.media.video.codec.HardwareVideoEncoderFactory;
 import dev.onvoid.webrtc.media.video.codec.VideoDecoderFactory;
 import dev.onvoid.webrtc.media.video.codec.VideoEncoderFactory;
 
@@ -94,9 +100,6 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	private long signalingThreadHandle;
 
 	@SuppressWarnings("unused")
-	private long workerThreadHandle;
-
-	@SuppressWarnings("unused")
 	private long audioModuleHandle;
 
 	/** Guards {@link #audioInputMode}. */
@@ -110,7 +113,7 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 * Creates an instance of PeerConnectionFactory.
 	 */
 	public PeerConnectionFactory() {
-		initialize(null, null, null, null, null);
+		initialize(null, null, null, null, null, null, null, false, false);
 	}
 
 	/**
@@ -120,7 +123,7 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 * @param audioProcessing The custom audio processing module.
 	 */
 	public PeerConnectionFactory(AudioProcessing audioProcessing) {
-		initialize(null, null, audioProcessing, null, null);
+		initialize(null, null, audioProcessing, null, null, null, null, false, false);
 	}
 
 	/**
@@ -130,7 +133,7 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 * @param audioModule The custom audio device module.
 	 */
 	public PeerConnectionFactory(AudioDeviceModuleBase audioModule) {
-		initialize(null, audioModule, null, null, null);
+		initialize(null, audioModule, null, null, null, null, null, false, false);
 	}
 
 	/**
@@ -142,7 +145,7 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 */
 	public PeerConnectionFactory(AudioDeviceModuleBase audioModule,
 			AudioProcessing audioProcessing) {
-		initialize(null, audioModule, audioProcessing, null, null);
+		initialize(null, audioModule, audioProcessing, null, null, null, null, false, false);
 	}
 
 	/**
@@ -154,7 +157,7 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 *                    non-null and non-empty.
 	 */
 	public PeerConnectionFactory(Map<String, String> fieldTrials) {
-		initialize(fieldTrials, null, null, null, null);
+		initialize(fieldTrials, null, null, null, null, null, null, false, false);
 	}
 
 	/**
@@ -168,7 +171,7 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 */
 	public PeerConnectionFactory(Map<String, String> fieldTrials,
 			AudioProcessing audioProcessing) {
-		initialize(fieldTrials, null, audioProcessing, null, null);
+		initialize(fieldTrials, null, audioProcessing, null, null, null, null, false, false);
 	}
 
 	/**
@@ -182,7 +185,7 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 */
 	public PeerConnectionFactory(Map<String, String> fieldTrials,
 			AudioDeviceModuleBase audioModule) {
-		initialize(fieldTrials, audioModule, null, null, null);
+		initialize(fieldTrials, audioModule, null, null, null, null, null, false, false);
 	}
 
 	/**
@@ -197,7 +200,7 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 */
 	public PeerConnectionFactory(Map<String, String> fieldTrials,
 			AudioDeviceModuleBase audioModule, AudioProcessing audioProcessing) {
-		initialize(fieldTrials, audioModule, audioProcessing, null, null);
+		initialize(fieldTrials, audioModule, audioProcessing, null, null, null, null, false, false);
 	}
 
 	/**
@@ -207,16 +210,23 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	 * @param builder The builder with the modules to use.
 	 */
 	private PeerConnectionFactory(Builder builder) {
-		// The built-in codecs need no detour through Java.
-		VideoEncoderFactory encoderFactory = builder.videoEncoderFactory instanceof DefaultVideoEncoderFactory
+		// The built-in codecs, with or without the GPU's, need no detour
+		// through Java; the native factories are made directly.
+		boolean hardwareEncoders = builder.videoEncoderFactory instanceof HardwareVideoEncoderFactory;
+		boolean hardwareDecoders = builder.videoDecoderFactory instanceof HardwareVideoDecoderFactory;
+
+		VideoEncoderFactory encoderFactory = hardwareEncoders
+				|| builder.videoEncoderFactory instanceof DefaultVideoEncoderFactory
 				? null
 				: builder.videoEncoderFactory;
-		VideoDecoderFactory decoderFactory = builder.videoDecoderFactory instanceof DefaultVideoDecoderFactory
+		VideoDecoderFactory decoderFactory = hardwareDecoders
+				|| builder.videoDecoderFactory instanceof DefaultVideoDecoderFactory
 				? null
 				: builder.videoDecoderFactory;
 
 		initialize(builder.fieldTrials, builder.audioModule, builder.audioProcessing,
-				encoderFactory, decoderFactory);
+				encoderFactory, decoderFactory, builder.audioEncoderFactory,
+				builder.audioDecoderFactory, hardwareEncoders, hardwareDecoders);
 	}
 
 	/**
@@ -400,10 +410,18 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 	@Override
 	public native void dispose();
 
+	/**
+	 * Creates the native factory. A null codec factory stands for the
+	 * built-in codecs: those with the GPU's in front when the matching
+	 * {@code hardware} flag is set, the default ones otherwise.
+	 */
 	private native void initialize(Map<String, String> fieldTrials,
 			AudioDeviceModuleBase audioModule, AudioProcessing audioProcessing,
 			VideoEncoderFactory videoEncoderFactory,
-			VideoDecoderFactory videoDecoderFactory);
+			VideoDecoderFactory videoDecoderFactory,
+			AudioEncoderFactory audioEncoderFactory,
+			AudioDecoderFactory audioDecoderFactory,
+			boolean hardwareEncoders, boolean hardwareDecoders);
 
 	private native AudioTrackSource createAudioSourceInternal(AudioOptions options);
 
@@ -459,6 +477,10 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 		private VideoEncoderFactory videoEncoderFactory;
 
 		private VideoDecoderFactory videoDecoderFactory;
+
+		private AudioEncoderFactory audioEncoderFactory;
+
+		private AudioDecoderFactory audioDecoderFactory;
 
 
 		private Builder() {
@@ -536,6 +558,35 @@ public class PeerConnectionFactory extends DisposableNativeObject {
 		 */
 		public Builder setVideoDecoderFactory(VideoDecoderFactory factory) {
 			this.videoDecoderFactory = factory;
+			return this;
+		}
+
+		/**
+		 * Sets the factory of the audio encoders, which decides what audio
+		 * codecs the factory can send and in which order it offers them.
+		 * Without one, the factory uses all codecs of a {@link
+		 * BuiltinAudioEncoderFactory}.
+		 *
+		 * @param factory The audio encoder factory.
+		 *
+		 * @return This builder.
+		 */
+		public Builder setAudioEncoderFactory(AudioEncoderFactory factory) {
+			this.audioEncoderFactory = factory;
+			return this;
+		}
+
+		/**
+		 * Sets the factory of the audio decoders, which decides what audio
+		 * codecs the factory can receive. Without one, the factory uses all
+		 * codecs of a {@link BuiltinAudioDecoderFactory}.
+		 *
+		 * @param factory The audio decoder factory.
+		 *
+		 * @return This builder.
+		 */
+		public Builder setAudioDecoderFactory(AudioDecoderFactory factory) {
+			this.audioDecoderFactory = factory;
 			return this;
 		}
 

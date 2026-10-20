@@ -1,45 +1,13 @@
 #include "api/RTCDataChannelSendObserver.h"
+#include "api/JavaCallbackThread.h"
 #include "api/WebRTCUtils.h"
 #include "JavaString.h"
 #include "JNI_WebRTC.h"
 
-namespace
-{
-	// Hands an exception thrown by the observer to the calling thread's uncaught
-	// exception handler, as the JVM does for an exception escaping a Java thread.
-	// ExceptionDescribe would print the "Exception in thread" prefix straight to
-	// native stderr and the stack trace to System.err, splitting the report
-	// across two streams and leaving the prefix on an unterminated line.
-	void ReportUncaughtException(JNIEnv * env, jthrowable exception)
-	{
-		jni::JavaLocalRef<jclass> threadClass(env, env->FindClass("java/lang/Thread"));
-		jni::JavaLocalRef<jclass> handlerClass(env, env->FindClass("java/lang/Thread$UncaughtExceptionHandler"));
-		if (env->ExceptionCheck()) {
-			env->ExceptionClear();
-			return;
-		}
+#include "rtc_base/logging.h"
 
-		jmethodID currentThread = env->GetStaticMethodID(threadClass.get(), "currentThread", "()Ljava/lang/Thread;");
-		jmethodID getHandler = env->GetMethodID(threadClass.get(), "getUncaughtExceptionHandler",
-			"()Ljava/lang/Thread$UncaughtExceptionHandler;");
-		jmethodID uncaughtException = env->GetMethodID(handlerClass.get(), "uncaughtException",
-			"(Ljava/lang/Thread;Ljava/lang/Throwable;)V");
-		if (env->ExceptionCheck()) {
-			env->ExceptionClear();
-			return;
-		}
-
-		jni::JavaLocalRef<jobject> thread(env, env->CallStaticObjectMethod(threadClass.get(), currentThread));
-		jni::JavaLocalRef<jobject> handler(env, env->CallObjectMethod(thread.get(), getHandler));
-		if (!env->ExceptionCheck() && handler.get()) {
-			env->CallVoidMethod(handler.get(), uncaughtException, thread.get(), exception);
-		}
-		// Like the JVM, ignore an exception thrown by the handler itself.
-		if (env->ExceptionCheck()) {
-			env->ExceptionClear();
-		}
-	}
-}
+#include <optional>
+#include <string>
 
 namespace jni
 {
@@ -81,24 +49,29 @@ namespace jni
 		if (!callback.get()) {
 			return;
 		}
-		JNIEnv * env = AttachCurrentThread();
-		if (env == nullptr) {
-			return;
-		}
-		if (error == nullptr) {
-			env->CallVoidMethod(callback.get(), javaClass->onSuccess);
-		}
-		else {
-			JavaLocalRef<jstring> message(env, env->NewStringUTF(error));
-			if (!env->ExceptionCheck()) {
-				env->CallVoidMethod(callback.get(), javaClass->onFailure, message.get());
+		try {
+			std::optional<std::string> message;
+			if (error != nullptr) {
+				message = error;
 			}
+			// WebRTC completes sends on its network thread, where the Java observer must not run.
+			JavaCallbackThread::Post([callback = std::move(callback), javaClass = javaClass,
+					message = std::move(message)](JNIEnv * env) {
+				if (!message) {
+					env->CallVoidMethod(callback.get(), javaClass->onSuccess);
+				}
+				else {
+					JavaLocalRef<jstring> jMessage(env, env->NewStringUTF(message->c_str()));
+					if (!env->ExceptionCheck()) {
+						env->CallVoidMethod(callback.get(), javaClass->onFailure, jMessage.get());
+					}
+				}
+				// A Java exception must not escape into the next callback.
+				ReportPendingException(env);
+			});
 		}
-		// A Java exception must not escape into WebRTC's network task or a destructor.
-		if (env->ExceptionCheck()) {
-			JavaLocalRef<jthrowable> exception(env, env->ExceptionOccurred());
-			env->ExceptionClear();
-			ReportUncaughtException(env, exception.get());
+		catch (...) {
+			RTC_LOG(LS_ERROR) << "Could not report a data channel send result";
 		}
 	}
 

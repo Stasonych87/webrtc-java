@@ -239,6 +239,8 @@ namespace jni
 		if (jFrame == nullptr) {
 			RTC_LOG(LS_WARNING) << "Java encoder: dropping a frame that cannot be converted to I420";
 
+			ReportDroppedFrame(frame.rtp_timestamp());
+
 			return WEBRTC_VIDEO_CODEC_OK;
 		}
 
@@ -268,10 +270,13 @@ namespace jni
 			result = WEBRTC_VIDEO_CODEC_ERROR;
 		}
 		else {
+			std::optional<uint32_t> givenUp;
+
 			{
 				webrtc::MutexLock lock(&frameExtraInfosLock);
 
 				if (frameExtraInfos.size() >= kMaxPendingFrames) {
+					givenUp = frameExtraInfos.front().rtpTimestamp;
 					frameExtraInfos.pop_front();
 				}
 
@@ -279,6 +284,10 @@ namespace jni
 					frame.timestamp_us() * webrtc::kNumNanosecsPerMicrosec,
 					frame.rtp_timestamp()
 				});
+			}
+
+			if (givenUp) {
+				ReportDroppedFrame(*givenUp);
 			}
 
 			jobject status = env->CallObjectMethod(encoder, javaClass->encode, jFrame, info);
@@ -359,7 +368,8 @@ namespace jni
 		webrtc::EncodedImage image = EncodedImage::toNative(env, imageRef);
 		const int64_t captureTimeNs = EncodedImage::getCaptureTimeNs(env, imageRef);
 
-		FrameExtraInfo extraInfo;
+		std::optional<FrameExtraInfo> extraInfo;
+		std::vector<uint32_t> dropped;
 
 		{
 			webrtc::MutexLock lock(&frameExtraInfosLock);
@@ -367,21 +377,31 @@ namespace jni
 			// Frames come out in the order they went in, though an encoder
 			// may drop some, so the records of older frames are stale.
 			while (!frameExtraInfos.empty() && frameExtraInfos.front().captureTimeNs < captureTimeNs) {
+				dropped.push_back(frameExtraInfos.front().rtpTimestamp);
 				frameExtraInfos.pop_front();
 			}
 
-			if (frameExtraInfos.empty() || frameExtraInfos.front().captureTimeNs != captureTimeNs) {
-				RTC_LOG(LS_WARNING) << "Java encoder produced a frame for no frame it was given, capture time "
-					<< captureTimeNs << " ns";
-				return;
+			if (!frameExtraInfos.empty() && frameExtraInfos.front().captureTimeNs == captureTimeNs) {
+				extraInfo = frameExtraInfos.front();
+				frameExtraInfos.pop_front();
 			}
-
-			extraInfo = frameExtraInfos.front();
-			frameExtraInfos.pop_front();
 		}
 
-		image.SetRtpTimestamp(extraInfo.rtpTimestamp);
+		for (uint32_t rtpTimestamp : dropped) {
+			ReportDroppedFrame(rtpTimestamp);
+		}
+
+		if (!extraInfo) {
+			RTC_LOG(LS_WARNING) << "Java encoder produced a frame for no frame it was given, capture time "
+				<< captureTimeNs << " ns";
+			return;
+		}
+
+		image.SetRtpTimestamp(extraInfo->rtpTimestamp);
 		image.capture_time_ms_ = captureTimeNs / webrtc::kNumNanosecsPerMillisec;
+		// The Java encoders produce a single layer, so every frame ends its
+		// temporal unit.
+		image.set_end_of_temporal_unit(true);
 
 		if (image.qp_ < 0) {
 			image.qp_ = ParseQp(image);
@@ -392,6 +412,16 @@ namespace jni
 
 		if (encodeCallback != nullptr) {
 			encodeCallback->OnEncodedImage(image, &info);
+		}
+	}
+
+	void VideoEncoderWrapper::ReportDroppedFrame(uint32_t rtpTimestamp)
+	{
+		webrtc::EncodedImageCallback * encodeCallback = callback.load();
+
+		if (encodeCallback != nullptr) {
+			// A single layer, so nothing else follows for the frame.
+			encodeCallback->OnFrameDropped(rtpTimestamp, /*spatial_id=*/0, /*is_end_of_temporal_unit=*/true);
 		}
 	}
 
@@ -502,6 +532,9 @@ namespace jni
 			case webrtc::kVideoCodecVP9:
 				return ScalingSettings(low.value_or(kLowVp9QpThreshold), high.value_or(kHighVp9QpThreshold));
 
+			case webrtc::kVideoCodecH265:
+				// WebRTC has no thresholds of its own for H.265 yet and uses those
+				// of H.264 (bugs.webrtc.org/13485), as its Android wrapper does.
 			case webrtc::kVideoCodecH264:
 				return ScalingSettings(low.value_or(kLowH264QpThreshold), high.value_or(kHighH264QpThreshold));
 
@@ -561,6 +594,12 @@ namespace jni
 			case webrtc::kVideoCodecH264:
 				h264BitstreamParser.ParseBitstream(image);
 				qp = h264BitstreamParser.GetLastSliceQp().value_or(-1);
+				success = qp >= 0;
+				break;
+
+			case webrtc::kVideoCodecH265:
+				h265BitstreamParser.ParseBitstream(image);
+				qp = h265BitstreamParser.GetLastSliceQp().value_or(-1);
 				success = qp >= 0;
 				break;
 

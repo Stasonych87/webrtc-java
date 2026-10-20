@@ -229,21 +229,34 @@ namespace jni
 
 				scaled_buffer->ScaleFrom(*buffer);
 
-				OnFrame(webrtc::VideoFrame::Builder()
+				webrtc::VideoFrame scaled = webrtc::VideoFrame::Builder()
 					.set_video_frame_buffer(scaled_buffer)
 					.set_rotation(webrtc::kVideoRotation_0)
 					.set_timestamp_us(time)
-					.build());
+					.build();
+
+				if (!ProcessFrame(scaled)) {
+					OnFrame(scaled);
+				}
 			}
 			else {
 				// No adaptations needed, just return the frame as is.
-				OnFrame(webrtc::VideoFrame::Builder()
+				webrtc::VideoFrame unscaled = webrtc::VideoFrame::Builder()
 					.set_video_frame_buffer(buffer)
 					.set_rotation(webrtc::kVideoRotation_0)
 					.set_timestamp_us(time)
-					.build());
+					.build();
+
+				if (!ProcessFrame(unscaled)) {
+					OnFrame(unscaled);
+				}
 			}
 		}
+	}
+
+	void VideoTrackDesktopSource::DeliverProcessedFrame(const webrtc::VideoFrame & frame)
+	{
+		OnFrame(frame);
 	}
 
 	void VideoTrackDesktopSource::capture()
@@ -254,6 +267,15 @@ namespace jni
 
 #if defined(WEBRTC_MAC)
 		options.set_allow_iosurface(true);
+		// Screens are captured with ScreenCaptureKit on macOS 14 and newer.
+		// The CGDisplayStream capturer otherwise used gets new pixels only
+		// when its stream calls back, and when that stops it keeps sending the
+		// first frame with a live cursor on top (issue #344). Older macOS
+		// falls back to it. Only screens: window capture ignores this, and the
+		// source list stays with the CGDisplayStream capturer in
+		// DesktopCapturer, since ScreenCaptureKit lists no screens without its
+		// system picker. Both name a screen by its CGDirectDisplayID.
+		options.set_allow_sck_capturer(true);
 #endif
 #if defined(WEBRTC_WIN)
 		options.set_allow_directx_capturer(true);
@@ -293,6 +315,12 @@ namespace jni
 			terminate();
 			return;
 		}
+
+#if defined(WEBRTC_MAC)
+		// ScreenCaptureKit captures at the display refresh rate unless told
+		// otherwise, though only one frame per interval below is taken.
+		capturer->SetMaxFrameRate(frameRate);
+#endif
 
 		capturer->Start(this);
 
