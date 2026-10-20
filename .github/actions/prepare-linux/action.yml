@@ -31,8 +31,9 @@ runs:
     - name: Install required packages
       run: |
         sudo apt-get update -q
-        # nasm is what FFmpeg assembles its x86 code with.
-        sudo apt-get install -y -q binutils cmake git locales lsb-release nasm ninja-build pipewire pipewire-pulse pkg-config python3 python3-setuptools rsync unzip wget xz-utils
+        # nasm is what FFmpeg assembles its x86 code with, and meson builds
+        # dav1d, the software decoder of AV1 in the media module.
+        sudo apt-get install -y -q binutils cmake git locales lsb-release meson nasm ninja-build pipewire pipewire-pulse pkg-config python3 python3-setuptools rsync unzip wget xz-utils
       shell: bash
 
     # Chromium Clang to be used with the clang toolchain file. The JNI code
@@ -42,7 +43,7 @@ runs:
     # tools/clang/scripts/update.py of the webrtc.branch set in
     # webrtc-jni/pom.xml. Update it whenever that branch changes.
     - name: Select the Chromium Clang package
-      run: echo "CLANG_PACKAGE=clang-llvmorg-23-init-19482-g53d18800-1.tar.xz" >> "$GITHUB_ENV"
+      run: echo "CLANG_PACKAGE=clang-llvmorg-24-init-7747-g62397f8b-27.tar.xz" >> "$GITHUB_ENV"
       shell: bash
 
     - name: Cache the Chromium Clang package
