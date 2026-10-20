@@ -38,6 +38,7 @@ jobs:
     outputs:
       release_tag: ${{ steps.release-version.outputs.tag }}
       release_body: ${{ steps.git-cliff.outputs.content }}
+      release_version: ${{ steps.release-version.outputs.version }}
     steps:
       # The full history, for git-cliff.
       - name: Checkout code
@@ -237,7 +238,7 @@ jobs:
         with:
           version: ${{ steps.release-version.outputs.version }}
           profiles: release
-          skip-publishing: ${{ inputs.dryRun }}
+#          skip-publishing: ${{ inputs.dryRun }}
 
       - name: Summarize what would have been published
         if: ${{ inputs.dryRun }}
