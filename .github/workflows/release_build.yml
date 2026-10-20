@@ -150,7 +150,9 @@ jobs:
         if: ${{ !inputs.dryRun }}
         env:
           RELEASE_TAG: ${{ steps.release-version.outputs.tag }}
-        run: git push "refs/tags/$RELEASE_TAG"
+        run: |
+          git push
+          git push --tags
 
       # Explicit dispatch is supported with GITHUB_TOKEN, unlike push events.
       # --ref makes the new run's github.sha the release commit itself.
