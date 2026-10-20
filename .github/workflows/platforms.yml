@@ -62,7 +62,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.version }}
+          ref: ${{ inputs.ref }}
           # The media module builds FFmpeg from its third-party submodule.
           submodules: true
 
