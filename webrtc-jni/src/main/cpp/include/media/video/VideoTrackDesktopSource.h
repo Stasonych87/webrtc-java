@@ -17,12 +17,14 @@
 #ifndef JNI_WEBRTC_MEDIA_VIDEO_TRACK_DESKTOP_SOURCE_H_
 #define JNI_WEBRTC_MEDIA_VIDEO_TRACK_DESKTOP_SOURCE_H_
 
-#include "api/video/i420_buffer.h"
 #include "api/video/adapted_video_track_source.h"
+#include "common_video/include/video_frame_buffer_pool.h"
 #include "modules/desktop_capture/desktop_capturer.h"
 #include "rtc_base/platform_thread.h"
 
 #include "media/video/VideoProcessorHost.h"
+
+#include <atomic>
 
 namespace jni
 {
@@ -36,9 +38,18 @@ namespace jni
             void setFrameRate(const uint16_t frameRate);
             void setMaxFrameSize(webrtc::DesktopSize size);
             void setFocusSelectedSource(bool focus);
+            void setUseSystemPicker(bool usePicker);
+
+            // Whether the system offers its own picker for screens and
+            // windows: macOS 14 and newer, and Wayland.
+            static bool isSystemPickerAvailable();
 
             void start();
+            // Stops capturing and waits for the capture thread to finish,
+            // unless called on that thread, as from an ended listener.
             void stop();
+            // Stops capturing without waiting.
+            void requestStop();
             void terminate();
 
             // AdaptedVideoTrackSource implementation.
@@ -56,11 +67,15 @@ namespace jni
         private:
             void capture();
             void process(std::unique_ptr<webrtc::DesktopFrame>& frame);
+            bool onCaptureThread() const;
 
         private:
             uint16_t frameRate;
-            bool isCapturing;
+            std::atomic<bool> isCapturing;
             bool focusSelectedSource;
+            bool useSystemPicker;
+            // Set on the capture thread when the capturer gave up for good.
+            bool permanentError;
 
             webrtc::DesktopSize maxFrameSize;
 
@@ -73,7 +88,7 @@ namespace jni
 
             webrtc::PlatformThread captureThread;
 
-            webrtc::scoped_refptr<webrtc::I420Buffer> buffer;
+            webrtc::VideoFrameBufferPool bufferPool;
 	};
 }
 

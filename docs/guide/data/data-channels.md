@@ -1,5 +1,7 @@
 # Data Channels
 
+<ApiNote client="/guide/client/data-channels" title="Data Channels" />
+
 This guide explains how to use WebRTC data channels with the webrtc-java library. Data channels provide a bidirectional communication mechanism that can be used to send arbitrary data between peers.
 
 ## Overview
@@ -203,7 +205,9 @@ dataChannel.sendAsync(binaryChannelBuffer, new RTCDataChannelSendObserver() {
 });
 ```
 
-The observer is called exactly once, with a failure if the operation is discarded while the channel shuts down. Success means the message was queued locally, not that the peer received it. Callbacks run on a native callback thread shared with other WebRTC observers; they may call other WebRTC methods, but should not block, so dispatch long work to an executor of your own. Without an observer, `sendAsync` logs failures and reports nothing to the caller.
+The observer is called exactly once, with a failure if the operation is discarded while the channel shuts down. Success means the message was queued locally, not that the peer received it.
+
+Callbacks run on a native callback thread shared with other WebRTC observers. They may call other WebRTC methods, but should not block, so dispatch long work to an executor of your own. Without an observer, `sendAsync` logs failures and reports nothing to the caller.
 
 ### Receiving Data
 
@@ -296,6 +300,8 @@ dataChannel.close();
 dataChannel.dispose();
 ```
 
+Unlike other disposable objects, a data channel is not disposed by `close()`, which only closes the channel. A try-with-resources statement therefore does not release it: call `dispose()` yourself.
+
 ## Best Practices
 
 1. **Error Handling**: Always wrap `send` calls in try-catch blocks as they can throw exceptions if the buffer is full or the channel is not in the `OPEN` state.
@@ -318,12 +324,3 @@ dataChannel.dispose();
 7. **Binary vs. Text**: Use the appropriate flag when creating `RTCDataChannelBuffer` objects:
    - `false` for UTF-8 text data
    - `true` for binary data
-
-## Conclusion
-
-WebRTC data channels provide a powerful way to establish peer-to-peer communication for transferring arbitrary data between clients.
-Data channels complement WebRTC's audio and video capabilities, making it possible to build comprehensive real-time applications that include text chat, file transfers, game state synchronization, and other custom data exchange requirements.
-
-For optimal performance, remember to follow the best practices outlined in this guide, particularly regarding buffer management and proper cleanup of resources.
-
-For more information on other WebRTC features, refer to the additional guides in the documentation.

@@ -1,5 +1,7 @@
 # Field Trials
 
+<ApiNote client="/guide/client-api#the-runtime" title="The Runtime" />
+
 WebRTC uses field trials to gate experimental features and tune internal behavior (e.g. congestion control, codec selection, message interleaving) without changing the public API. This guide explains how to enable them when creating a `PeerConnectionFactory`.
 
 Field trials are applied once, at `PeerConnectionFactory` creation, and take effect for everything created by that factory (peer connections, tracks, sources). Different `PeerConnectionFactory` instances in the same process may use different field trials.
@@ -39,7 +41,7 @@ Each key and value must be non-null and non-empty. Passing a map that violates t
 
 ## Tips and Troubleshooting
 
-- Field trial names and accepted groups (e.g. `Enabled`, `Disabled`) are defined by the underlying WebRTC native code and change between WebRTC releases; consult the WebRTC source for the branch this library is built against to find currently available trials.
+- Field trial names and accepted groups (e.g. `Enabled`, `Disabled`) are defined by the underlying WebRTC native code, and change between WebRTC releases. To find the trials available now, consult the WebRTC source of the branch this library is built against.
 - Since field trials configure experimental or internal behavior, prefer enabling only the trials you specifically need, and re-verify them after upgrading to a new release of this library.
 
 ## Related API

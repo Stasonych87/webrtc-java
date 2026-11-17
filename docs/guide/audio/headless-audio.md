@@ -1,5 +1,7 @@
 # Headless Audio
 
+<ApiNote client="/guide/client-api#audio-modes" title="Audio Modes" />
+
 The `HeadlessAudioDeviceModule` is a convenience implementation of the `AudioDeviceModule` that uses WebRTC's dummy audio layer. It avoids touching real OS audio devices while still driving the WebRTC render pipeline, which is what delivers received audio to an `AudioTrackSink`. It has no capture path; audio you want to send goes through a `CustomAudioSource`.
 
 This is ideal for:
@@ -83,8 +85,12 @@ A receiver learns its sources as playout pulls the audio too, so `RTCRtpReceiver
 The module has no capture path. There is no device to capture from, so `initRecording()` and `startRecording()` only move the module through the recording lifecycle and deliver no audio. Audio you want to send goes through a `CustomAudioSource`, which hands it to the track's senders directly.
 
 ::: info
-Earlier versions pulled the render mix back through the module and handed it to WebRTC as captured audio. That made a peer connection send the audio it had just received from the remote peer straight back to it, and it fed the send stream a second time alongside the pushed audio, which aborted the process inside WebRTC. Calling `startRecording()` is now harmless but does nothing.
-:::
+Earlier versions pulled the render mix back through the module, and handed it to WebRTC as captured audio. That had two effects:
+
+- A peer connection sent the audio it had just received from the remote peer straight back to it.
+- The send stream got the audio a second time, alongside the pushed audio, which aborted the process inside WebRTC.
+
+Calling `startRecording()` is now harmless, but does nothing.
 
 Typical steps:
 
@@ -103,7 +109,7 @@ CustomAudioSource source = new CustomAudioSource();
 AudioTrack senderTrack = factory.createAudioTrack("audio0", source);
 RTCRtpSender sender = peerConnection.addTrack(senderTrack, Collections.singletonList("stream0"));
 
-// Push PCM frames into the CustomAudioSource (10 ms chunks work well)
+// Push PCM frames into the CustomAudioSource, 10 ms per call
 byte[] pcm = new byte[480 /* frames */ * 2 /* ch */ * 2 /* bytes */];
 source.pushAudio(pcm, 16, 48000, 2, 480);
 
@@ -118,7 +124,7 @@ factory.dispose();
 ```
 
 ::: info
-- Push one chunk of 16-bit PCM per call, with 10 ms being the size WebRTC works with. See [Custom Audio Source](/guide/audio/custom-audio-source) for the format rules.
+- Push one chunk of 10 ms of 16-bit PCM per call. See [Custom Audio Source](/guide/audio/custom-audio-source) for the format rules.
 - Push from a single thread. The audio reaches the sender on the thread that calls `pushAudio`.
 - The module exposes one virtual recording device; selection calls succeed with index 0.
 - Stereo can be enabled/disabled via the standard ADM methods; by default 1 channel is used.
@@ -130,7 +136,7 @@ factory.dispose();
 - Using a standard `AudioDeviceModule` with `AudioLayer.kDummyAudio` disables actual audio I/O; the audio pipeline is not started for playout and sinks will typically not receive audio frame callbacks. Use this only when you intentionally do not want any audio delivery (e.g., video‑only or fully custom audio).
 
 Related guides:
-- [Audio Device Selection](/guide/audio/audio-devices)
+- [Audio Devices](/guide/audio/audio-devices)
 - [Custom Audio Source](/guide/audio/custom-audio-source)
 
 ## Limitations and notes

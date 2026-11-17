@@ -25,31 +25,69 @@
 
 #include <jni.h>
 #include <memory>
+#include <mutex>
 
 namespace jni
 {
+	class DesktopCaptureCallback;
+
 	class DesktopCapturer
 	{
 		public:
 			explicit DesktopCapturer(bool screenCapturer);
 			~DesktopCapturer();
 
+			// Starts capturing and keeps the callback until this capturer is
+			// destroyed. Returns false if it has been started before: WebRTC's
+			// capturers take a single callback.
+			bool Start(std::unique_ptr<DesktopCaptureCallback> callback);
+
+			// Captures a frame. Without a capture backend, the callback gets
+			// ERROR_PERMANENT. Returns false if there is no callback yet, which
+			// a capturer of WebRTC would dereference.
+			bool CaptureFrame();
+
 			// webrtc::DesktopCapturer implementations.
-			void Start(webrtc::DesktopCapturer::Callback * callback);
 			void SetMaxFrameRate(uint32_t max_frame_rate);
 			void SetSharedMemoryFactory(std::unique_ptr<webrtc::SharedMemoryFactory> factory);
-			void CaptureFrame();
 			void SetExcludedWindow(webrtc::WindowId window);
 			bool GetSourceList(webrtc::DesktopCapturer::SourceList * sources);
 			bool SelectSource(webrtc::DesktopCapturer::SourceId id);
 			bool FocusOnSelectedSource();
 			void setFocusSelectedSource(bool focus);
+
+			// Lets the user choose a screen or windows in the system's picker,
+			// shown by Start(), instead of a source selected here. Replaces the
+			// capturer, so a selected source is forgotten. Returns false if
+			// capture has been started.
+			bool setUseSystemPicker(bool usePicker);
+
+			// Whether the system offers its own picker for screens and
+			// windows: macOS 14 and newer, and Wayland.
+			static bool isSystemPickerAvailable();
+
 			bool IsOccluded(const webrtc::DesktopVector & pos);
+			bool isWindowCapturer() const;
 
 		protected:
+			// Creates the capturer for the current settings.
+			void createCapturer();
+
+			std::mutex startMutex;
+
+			// Declared before the capturer, which uses it until destroyed.
+			std::unique_ptr<DesktopCaptureCallback> captureCallback;
+
 			std::unique_ptr<webrtc::DesktopCapturer> capturer;
 
 			bool focusSelectedSource;
+
+			bool useSystemPicker;
+
+			// Zero until set.
+			uint32_t maxFrameRate;
+
+			const bool windowCapturer;
 
 #if defined(WEBRTC_WIN)
 		private:

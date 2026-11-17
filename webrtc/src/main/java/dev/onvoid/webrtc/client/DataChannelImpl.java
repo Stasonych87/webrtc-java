@@ -24,8 +24,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import dev.onvoid.webrtc.RTCDataChannel;
 import dev.onvoid.webrtc.RTCDataChannelBuffer;
@@ -37,22 +39,38 @@ import dev.onvoid.webrtc.RTCDataChannelSendObserver;
  * <p>
  * The native channel is used on the peer's control executor, where sends wait
  * while the channel is not open or holds more than {@link #HIGH_WATER_MARK}
- * bytes. Handlers run on the peer's event executor.
+ * bytes. What waits is bounded by the peer's channel send limit, beyond which
+ * sends fail at once. Handlers run on the peer's event executor.
+ * <p>
+ * Received messages are counted as they arrive, before they are queued for
+ * the handlers, and until the handlers are done with them. When they reach
+ * the peer's channel receive limit, the channel closes: WebRTC cannot be told
+ * to stop receiving, and dropping messages of a reliable channel would lose
+ * them unnoticed.
  */
 final class DataChannelImpl implements DataChannel {
 
 	/** Bytes the native channel may hold before sends wait in Java. */
 	static final long HIGH_WATER_MARK = 1024 * 1024;
 
-	/** Bytes of received messages kept while there is no message handler. */
-	static final long EARLY_LIMIT = 16 * 1024 * 1024;
-
 	private final PeerImpl peer;
 
 	private final String label;
 
+	/** The most bytes {@link #held} may reach. */
+	private final long sendLimit;
+
 	/** Bytes sent and not yet handed to the transport. */
 	private final AtomicLong held = new AtomicLong();
+
+	/** The most bytes {@link #received} may reach. */
+	private final long receiveLimit;
+
+	/** Bytes received that the handlers are not done with, or that wait for one. */
+	private final AtomicLong received = new AtomicLong();
+
+	/** Set once received messages went over the limit, after which none is queued. */
+	private final AtomicBoolean overflowed = new AtomicBoolean();
 
 	private volatile ChannelState state = ChannelState.CONNECTING;
 
@@ -77,8 +95,6 @@ final class DataChannelImpl implements DataChannel {
 
 	private long earlyBytes;
 
-	private boolean earlyDropReported;
-
 	private final Handlers<Message> messageHandlers;
 
 	private final Handlers<ChannelState> stateHandlers;
@@ -93,8 +109,12 @@ final class DataChannelImpl implements DataChannel {
 	DataChannelImpl(PeerImpl peer, String label) {
 		this.peer = peer;
 		this.label = label;
+		this.sendLimit = peer.channelSendLimit();
+		this.receiveLimit = peer.channelReceiveLimit();
 		this.messageHandlers = new Handlers<>(peer.rtc::reportError);
 		this.stateHandlers = new Handlers<>(peer.rtc::reportError);
+
+		peer.rtc.track(opened, peer.events);
 	}
 
 	/**
@@ -138,31 +158,44 @@ final class DataChannelImpl implements DataChannel {
 
 	@Override
 	public CompletableFuture<DataChannel> whenOpen() {
-		return opened;
+		return ClientFuture.copyOf(opened);
 	}
 
 	@Override
 	public CompletableFuture<Void> send(String text) {
 		requireNonNull(text, "text");
 
-		return enqueue(text.getBytes(StandardCharsets.UTF_8), false);
+		// UTF-8 takes at least a byte for each char, so a text that cannot
+		// fit is refused before it is encoded.
+		long waiting = held.get();
+
+		if (waiting + text.length() > sendLimit) {
+			return full(waiting, "at least " + text.length());
+		}
+
+		byte[] encoded = text.getBytes(StandardCharsets.UTF_8);
+
+		return enqueue(encoded.length, false, () -> encoded);
 	}
 
 	@Override
 	public CompletableFuture<Void> send(byte[] data) {
 		requireNonNull(data, "data");
 
-		return enqueue(data.clone(), true);
+		return enqueue(data.length, true, data::clone);
 	}
 
 	@Override
 	public CompletableFuture<Void> send(ByteBuffer data) {
 		requireNonNull(data, "data");
 
-		byte[] copy = new byte[data.remaining()];
-		data.duplicate().get(copy);
+		int size = data.remaining();
 
-		return enqueue(copy, true);
+		return enqueue(size, true, () -> {
+			byte[] copy = new byte[size];
+			data.duplicate().get(copy);
+			return copy;
+		});
 	}
 
 	@Override
@@ -179,12 +212,15 @@ final class DataChannelImpl implements DataChannel {
 
 			if (!early.isEmpty()) {
 				List<Message> kept = new ArrayList<>(early);
+				long keptBytes = earlyBytes;
 				early.clear();
 				earlyBytes = 0;
 
 				for (Message message : kept) {
 					peer.call(handler, message);
 				}
+
+				received.addAndGet(-keptBytes);
 			}
 
 			return subscription;
@@ -253,27 +289,57 @@ final class DataChannelImpl implements DataChannel {
 
 		nativeBuffered = 0;
 		state = ChannelState.CLOSED;
-		peer.channelClosed(this);
+		peer.channels.closed(this);
 
-		peer.events.execute(() -> deliverState(ChannelState.CLOSED, error));
+		peer.events.execute(() -> deliverState(ChannelState.CLOSED, error),
+				() -> settleOpened(ChannelState.CLOSED, error));
 	}
 
-	private CompletableFuture<Void> enqueue(byte[] data, boolean binary) {
+	/**
+	 * Takes the size out of the send limit, and only then makes the copy that
+	 * waits: a message too large for the limit is refused without the memory
+	 * of a copy. A copy that fails gives its share back.
+	 */
+	private CompletableFuture<Void> enqueue(long size, boolean binary, Supplier<byte[]> copy) {
+		long before = held.getAndUpdate(amount -> amount + size <= sendLimit ? amount + size : amount);
+
+		if (before + size > sendLimit) {
+			return full(before, Long.toString(size));
+		}
+
+		byte[] data;
+
+		try {
+			data = copy.get();
+		}
+		catch (Throwable e) {
+			held.addAndGet(-size);
+			throw e;
+		}
+
 		CompletableFuture<Void> sent = new CompletableFuture<>();
-		held.addAndGet(data.length);
+		Runnable closed = () -> {
+			held.addAndGet(-size);
+			sent.completeExceptionally(new PeerClosedException("The data channel " + label + " is closed"));
+		};
 
 		peer.control.execute(() -> {
 			if (released || state == ChannelState.CLOSING || state == ChannelState.CLOSED) {
-				held.addAndGet(-data.length);
-				sent.completeExceptionally(new PeerClosedException("The data channel " + label + " is closed"));
+				closed.run();
 				return;
 			}
 
 			pending.add(new Pending(data, binary, sent));
 			pump();
-		});
+		}, closed);
 
 		return peer.toPublic(sent);
+	}
+
+	private CompletableFuture<Void> full(long waiting, String size) {
+		return peer.toPublic(ClientFuture.failed(new ChannelFullException("The data channel " + label
+				+ " holds " + waiting + " bytes waiting to be sent, and " + size + " more would exceed "
+				+ "its limit of " + sendLimit)));
 	}
 
 	/** Hands waiting messages to the transport while it has room. */
@@ -351,7 +417,7 @@ final class DataChannelImpl implements DataChannel {
 			failPending(new PeerClosedException("The data channel " + label + " is closing"));
 		}
 
-		peer.events.execute(() -> deliverState(newState, null));
+		peer.events.execute(() -> deliverState(newState, null), () -> settleOpened(newState, null));
 	}
 
 	private void bufferChanged() {
@@ -360,7 +426,34 @@ final class DataChannelImpl implements DataChannel {
 		}
 	}
 
+	/** Closes a channel whose received messages went over the limit. */
+	private void receiveLimitExceeded() {
+		if (released) {
+			return;
+		}
+
+		WebRtcException error = new WebRtcException("The data channel " + label + " closed: its message "
+				+ "handlers fell more than " + receiveLimit + " bytes of received messages behind");
+
+		peer.deliverError(error);
+		closeFromPeer(error);
+	}
+
 	// On the event executor.
+
+	/**
+	 * Completes the opened future for the state, which is all that is left of
+	 * delivering it when the event executor rejects that.
+	 */
+	private void settleOpened(ChannelState newState, WebRtcException error) {
+		if (newState == ChannelState.OPEN) {
+			opened.complete(this);
+		}
+		else if (newState == ChannelState.CLOSED) {
+			opened.completeExceptionally(error != null ? error
+					: new PeerClosedException("The data channel " + label + " is closed"));
+		}
+	}
 
 	private void deliverState(ChannelState newState, WebRtcException error) {
 		if (newState == deliveredState || deliveredState == ChannelState.CLOSED) {
@@ -369,43 +462,35 @@ final class DataChannelImpl implements DataChannel {
 
 		deliveredState = newState;
 		stateHandlers.accept(newState);
+		settleOpened(newState, error);
 
-		if (newState == ChannelState.OPEN) {
-			opened.complete(this);
-		}
-		else if (newState == ChannelState.CLOSED) {
-			opened.completeExceptionally(error != null ? error
-					: new PeerClosedException("The data channel " + label + " is closed"));
-
+		if (newState == ChannelState.CLOSED) {
 			messageHandlers.clear();
 			stateHandlers.clear();
 			early.clear();
+			received.addAndGet(-earlyBytes);
 			earlyBytes = 0;
 		}
 	}
 
 	private void deliverMessage(Message message) {
 		if (deliveredState == ChannelState.CLOSED) {
+			received.addAndGet(-message.size());
 			return;
 		}
 
 		if (messageHandlers.isEmpty()) {
+			// Kept for the next handler, and counted until it is done with them.
 			early.add(message);
 			earlyBytes += message.size();
-
-			// Kept for a handler that may never come, so their memory is bounded.
-			while (earlyBytes > EARLY_LIMIT && early.size() > 1) {
-				earlyBytes -= early.poll().size();
-
-				if (!earlyDropReported) {
-					earlyDropReported = true;
-					peer.deliverError(new WebRtcException("The data channel " + label + " dropped received messages: "
-							+ "more than " + (EARLY_LIMIT >> 20) + " MiB arrived while it had no message handler"));
-				}
-			}
 		}
 		else {
-			messageHandlers.accept(message);
+			try {
+				messageHandlers.accept(message);
+			}
+			finally {
+				received.addAndGet(-message.size());
+			}
 		}
 	}
 
@@ -440,12 +525,30 @@ final class DataChannelImpl implements DataChannel {
 		@Override
 		public void onMessage(RTCDataChannelBuffer buffer) {
 			// The buffer is valid only during this call.
-			byte[] data = new byte[buffer.data.remaining()];
+			if (overflowed.get()) {
+				// The channel is closing; nothing after the message over the limit is delivered.
+				return;
+			}
+
+			int size = buffer.data.remaining();
+
+			// Counted before it is queued, since that queue is what grows while
+			// the handlers fall behind.
+			if (received.addAndGet(size) > receiveLimit) {
+				received.addAndGet(-size);
+
+				if (overflowed.compareAndSet(false, true)) {
+					peer.control.execute(DataChannelImpl.this::receiveLimitExceeded);
+				}
+				return;
+			}
+
+			byte[] data = new byte[size];
 			buffer.data.duplicate().get(data);
 
 			Message message = new Message(data, buffer.binary);
 
-			peer.events.execute(() -> deliverMessage(message));
+			peer.events.execute(() -> deliverMessage(message), () -> received.addAndGet(-size));
 		}
 	}
 

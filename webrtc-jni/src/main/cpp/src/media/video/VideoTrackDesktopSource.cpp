@@ -15,6 +15,8 @@
  */
 
 #include "media/video/VideoTrackDesktopSource.h"
+#include "media/video/desktop/DesktopCapturer.h"
+#include "media/video/desktop/WindowFrameCrop.h"
 #include "Exception.h"
 
 #include "api/video/i420_buffer.h"
@@ -31,13 +33,30 @@
 #include "modules/desktop_capture/desktop_and_cursor_composer.h"
 #include "modules/desktop_capture/mouse_cursor_monitor.h"
 
+#if defined(WEBRTC_MAC)
+#include "media/video/desktop/macos/MacOSScreenCapturer.h"
+#include "media/video/desktop/macos/ScreenCaptureKitWindowCapturer.h"
+#include "modules/desktop_capture/mac/screen_capturer_sck.h"
+#endif
+
+#include <algorithm>
+#include <cmath>
+
 namespace jni
 {
+	namespace
+	{
+		// The source whose capture thread this is, if any.
+		thread_local const VideoTrackDesktopSource * captureSource = nullptr;
+	}
+
 	VideoTrackDesktopSource::VideoTrackDesktopSource() :
 		AdaptedVideoTrackSource(),
 		frameRate(20),
 		isCapturing(false),
 		focusSelectedSource(true),
+		useSystemPicker(false),
+		permanentError(false),
 		sourceState(kInitializing),
 		sourceId(-1),
 		sourceIsWindow(false)
@@ -46,7 +65,25 @@ namespace jni
 
 	VideoTrackDesktopSource::~VideoTrackDesktopSource()
 	{
-		stop();
+		isCapturing = false;
+
+		if (captureThread.empty()) {
+			return;
+		}
+
+		if (onCaptureThread()) {
+			// The capture thread let go of the last reference as it ended, for
+			// instance after an ended listener disposed the source and its
+			// track. A thread cannot join itself; a short-lived one joins it.
+			webrtc::PlatformThread::SpawnDetached(
+				[thread = std::move(captureThread)]() mutable {
+					thread.Finalize();
+				},
+				"VideoTrackDesktopJoin");
+		}
+		else {
+			captureThread.Finalize();
+		}
 	}
 
 	void VideoTrackDesktopSource::setSourceId(webrtc::DesktopCapturer::SourceId source, bool isWindow)
@@ -70,14 +107,29 @@ namespace jni
 		this->focusSelectedSource = focus;
 	}
 
+	void VideoTrackDesktopSource::setUseSystemPicker(bool usePicker)
+	{
+		this->useSystemPicker = usePicker;
+	}
+
+	bool VideoTrackDesktopSource::isSystemPickerAvailable()
+	{
+		return DesktopCapturer::isSystemPickerAvailable();
+	}
+
 	void VideoTrackDesktopSource::start()
 	{
 		if (captureThread.empty()) {
 			isCapturing = true;
+			permanentError = false;
+
+			// The capture thread keeps the source alive until it ends, so
+			// that an ended listener on that thread may stop or dispose it.
+			webrtc::scoped_refptr<VideoTrackDesktopSource> self(this);
 
 			captureThread = webrtc::PlatformThread::SpawnJoinable(
-				[&] {
-					capture();
+				[self = std::move(self)] {
+					self->capture();
 				},
 				"VideoTrackDesktopThread",
 				webrtc::ThreadAttributes().SetPriority(webrtc::ThreadPriority::kHigh));
@@ -88,8 +140,25 @@ namespace jni
 	{
 		if (!captureThread.empty()) {
 			isCapturing = false;
+
+			if (onCaptureThread()) {
+				// From an ended listener or a sink: the loop ends after this
+				// pass, and a later stop() or the destructor joins the thread.
+				return;
+			}
+
 			captureThread.Finalize();
 		}
+	}
+
+	void VideoTrackDesktopSource::requestStop()
+	{
+		isCapturing = false;
+	}
+
+	bool VideoTrackDesktopSource::onCaptureThread() const
+	{
+		return captureSource == this;
 	}
 
 	void VideoTrackDesktopSource::terminate()
@@ -125,7 +194,8 @@ namespace jni
 			if (result == webrtc::DesktopCapturer::Result::ERROR_PERMANENT) {
 				RTC_LOG(LS_ERROR) << "Permanent error capturing desktop frame. Stopping track.";
 
-                isCapturing = false;
+				permanentError = true;
+				isCapturing = false;
 			}
 
 			return;
@@ -170,23 +240,15 @@ namespace jni
 		}
 
 #if defined(WEBRTC_WIN)
-		// Crop black window borders.
-		bool fullscreen = frame->stride() == (frame->size().width() * webrtc::DesktopFrame::kBytesPerPixel);
-
-		if (!fullscreen) {
-			const webrtc::DesktopVector& top_left = frame->top_left();
-			const int32_t border = GetSystemMetrics(SM_CXPADDEDBORDER);
-
-			crop_x = border;
-			crop_y = top_left.y() < 0 ? -top_left.y() : 0;
-			crop_w = width - crop_x * 2;
-			crop_h = height - (crop_y + border);
+		if (sourceIsWindow) {
+			CropWindowBorder(*frame, GetSystemMetrics(SM_CXPADDEDBORDER), &crop_x, &crop_y, &crop_w, &crop_h);
 		}
 #endif
 
-		if (!buffer || buffer->width() != crop_w || buffer->height() != crop_h) {
-			buffer = webrtc::I420Buffer::Create(crop_w, crop_h);
-		}
+		// Sinks and video processors may keep a frame beyond this call. The pool
+		// writes only to buffers nothing else references, so that a kept frame
+		// keeps its pixels. It has no size limit and never returns null.
+		webrtc::scoped_refptr<webrtc::I420Buffer> buffer = bufferPool.CreateI420Buffer(crop_w, crop_h);
 
 		const int conversionResult = libyuv::ConvertToI420(
 			frame->data(),
@@ -199,28 +261,22 @@ namespace jni
 			// output. Passing buffer->height() (== crop_h) here made libyuv's internal
 			// bounds check (crop_y + crop_height <= src_height) fail with -1 whenever
 			// crop_y > 0 — i.e. for every maximized window, whose frame sits at
-			// top_left().y() == -border. Screen frames never hit this branch (exact stride,
-			// fullscreen == true), which is why only window capture appeared broken.
+			// top_left().y() == -border. Screen frames are not cropped, which is why only
+			// window capture appeared broken.
 			frame->stride() / webrtc::DesktopFrame::kBytesPerPixel, height, crop_w, crop_h,
 			libyuv::kRotate0,
 			libyuv::FOURCC_ARGB);
 
 		if (conversionResult >= 0) {
 			if (!maxFrameSize.is_empty()) {
-				// Adapt frame size to contraints.
-				int max_width = maxFrameSize.width();
-				int max_height = maxFrameSize.height();
+				// One factor for both limits: the frame fits both and keeps its
+				// aspect ratio. A very narrow limit must not round a side to 0.
+				const double scale = std::min({ 1.0,
+					maxFrameSize.width() / static_cast<double>(adapted_width),
+					maxFrameSize.height() / static_cast<double>(adapted_height) });
 
-				if (adapted_width > max_width) {
-					double scale = max_width / (double)adapted_width;
-					adapted_width = max_width;
-					adapted_height = (int)(adapted_height * scale);
-				}
-				else if (adapted_height > max_height) {
-					double scale = max_height / (double)adapted_height;
-					adapted_width = (int)(adapted_width * scale);
-					adapted_height = max_height;
-				}
+				adapted_width = std::max(1, static_cast<int>(std::lround(adapted_width * scale)));
+				adapted_height = std::max(1, static_cast<int>(std::lround(adapted_height * scale)));
 			}
 
 			if (adapted_width != width || adapted_height != height) {
@@ -261,21 +317,23 @@ namespace jni
 
 	void VideoTrackDesktopSource::capture()
 	{
+		captureSource = this;
+
 		auto options = webrtc::DesktopCaptureOptions::CreateDefault();
 		// Enable desktop effects.
 		options.set_disable_effects(false);
 
 #if defined(WEBRTC_MAC)
 		options.set_allow_iosurface(true);
-		// Screens are captured with ScreenCaptureKit on macOS 14 and newer.
-		// The CGDisplayStream capturer otherwise used gets new pixels only
-		// when its stream calls back, and when that stops it keeps sending the
-		// first frame with a live cursor on top (issue #344). Older macOS
-		// falls back to it. Only screens: window capture ignores this, and the
-		// source list stays with the CGDisplayStream capturer in
-		// DesktopCapturer, since ScreenCaptureKit lists no screens without its
-		// system picker. Both name a screen by its CGDirectDisplayID.
-		options.set_allow_sck_capturer(true);
+
+		if (useSystemPicker) {
+			// SCContentSharingPicker on macOS 14 and newer. ScreenCaptureKit
+			// draws the cursor: a picked window's frames start at the
+			// window's origin, where DesktopAndCursorComposer, working in
+			// desktop coordinates, would misplace it.
+			options.set_allow_sck_system_picker(true);
+			options.set_prefer_cursor_embedded(true);
+		}
 #endif
 #if defined(WEBRTC_WIN)
 		options.set_allow_directx_capturer(true);
@@ -291,6 +349,36 @@ namespace jni
 
 		std::unique_ptr<webrtc::DesktopCapturer> inner;
 
+		if (useSystemPicker) {
+			// The user chooses a screen or windows in the system's picker, so
+			// the source ID is not used. Without a picker the source ends
+			// rather than capture something the user did not choose.
+			inner = webrtc::DesktopCapturer::CreateGenericCapturer(options);
+
+			if (!inner) {
+				RTC_LOG(LS_ERROR) << "VideoTrackDesktopSource: No system picker on this system.";
+
+				terminate();
+				return;
+			}
+		}
+
+#if defined(WEBRTC_MAC)
+		if (!inner && sourceIsWindow) {
+			// Streams the window with ScreenCaptureKit on macOS 14 and newer,
+			// instead of a CGWindowListCreateImage snapshot per frame.
+			inner = CreateScreenCaptureKitWindowCapturer(options);
+		}
+		else if (!inner) {
+			// A screen is captured with ScreenCaptureKit on macOS 14 and newer.
+			// The CGDisplayStream capturer otherwise used gets new pixels only
+			// when its stream calls back, and when that stops it keeps sending
+			// the first frame with a live cursor on top (issue #344). It still
+			// captures the whole desktop, which ScreenCaptureKit cannot.
+			inner = CreateMacOSScreenCapturer(options);
+		}
+#endif
+
 #if defined(WEBRTC_USE_PIPEWIRE)
 		// Wayland: request "any screen content" so the xdg-desktop-portal picker
 		// offers both monitors and application windows in a single dialog (the
@@ -299,13 +387,24 @@ namespace jni
 		// when PipeWire is disallowed, in which case we fall back to the
 		// type-specific capturers below. The portal handles the actual source
 		// selection, so sourceIsWindow is irrelevant on this path.
-		inner = webrtc::DesktopCapturer::CreateGenericCapturer(options);
+		if (!inner) {
+			inner = webrtc::DesktopCapturer::CreateGenericCapturer(options);
+		}
 #endif
 
 		if (!inner) {
 			inner = sourceIsWindow
 				? webrtc::DesktopCapturer::CreateWindowCapturer(options)
 				: webrtc::DesktopCapturer::CreateScreenCapturer(options);
+		}
+
+		if (!inner) {
+			RTC_LOG(LS_ERROR) << "VideoTrackDesktopSource: No desktop capture backend available. "
+				"Possible causes: no display, missing X11 extensions, a Wayland session "
+				"without PipeWire support, or snap confinement.";
+
+			terminate();
+			return;
 		}
 
 		std::unique_ptr<webrtc::DesktopCapturer> capturer;
@@ -351,5 +450,16 @@ namespace jni
 		}
 
 		capturer.reset();
+
+		// Frees what a burst of kept frames left behind. Buffers still in use
+		// stay with their frames.
+		bufferPool.Release();
+
+		if (permanentError) {
+			// The capturer gave up for good: the window was closed, or the
+			// user cancelled the system picker or stopped sharing. The ended
+			// listeners run on this thread.
+			terminate();
+		}
 	}
 }

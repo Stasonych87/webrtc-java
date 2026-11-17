@@ -1,5 +1,7 @@
 # Custom Video Source
 
+<ApiNote client="/guide/client/sending-media#pushing-video-and-audio" title="Pushing Video and Audio" />
+
 This guide explains how to use the `CustomVideoSource` class to push video frames from external sources directly to the WebRTC video pipeline.
 
 ## Overview
@@ -68,8 +70,16 @@ VideoFrame frame = new VideoFrame(buffer, System.nanoTime());
 videoSource.pushFrame(frame);
 
 // Don't forget to release the frame when done
-frame.dispose();
+frame.release();
 ```
+
+A frame can also carry a `VideoFrameBuffer` of your own. The source takes its pixels from `toI420()`:
+
+- A `NativeI420Buffer` returned there is used as it is.
+- Any other `I420Buffer` is copied. Its planes have to be direct byte buffers, as large as their strides and the height require.
+- A buffer that does not fit its description is rejected with a `RuntimeException`.
+
+`VideoFrame.copy()` works the same way, and always returns a frame with a `NativeI420Buffer`.
 
 ## Video Format Considerations
 
@@ -78,7 +88,8 @@ When pushing video frames, you need to consider the following:
 ### Resolution
 - Common resolutions: 320x240, 640x480, 1280x720, 1920x1080
 - Higher resolutions require more bandwidth and processing power
-- Push frames at their full size: when the bitrate cannot carry them, the source scales them down (and, if asked, drops some) before they reach the encoder, the way a camera source does, and scales back up once the bandwidth allows. Local sinks on the track see the adapted frames too.
+- Push frames at their full size. When the bitrate cannot carry them, the source scales them down before they reach the encoder, and, if asked, drops some. It does so the way a camera source does, and scales back up once the bandwidth allows.
+- Local sinks on the track see the adapted frames too.
 
 ### Frame Rate
 - Common frame rates: 15, 24, 30, 60 fps
@@ -145,7 +156,9 @@ public class VideoStreamer {
 
 ### Keeping the Source's Own Timing
 
-`pushFrame(VideoFrame)` treats a frame as captured at the moment of the call, so the timing that reaches the other peer is the timing of your pushing thread. For a live source such as a camera that is exactly right. For a source that has timing of its own, such as a video file, it is not: every hiccup of the executor above ends up in the stream, and audio pushed alongside drifts out of sync with the video.
+`pushFrame(VideoFrame)` treats a frame as captured at the moment of the call. The timing that reaches the other peer is therefore the timing of your pushing thread.
+
+For a live source such as a camera, that is exactly right. For a source with timing of its own, such as a video file, it is not. Every hiccup of the executor above ends up in the stream, and audio pushed alongside drifts out of sync with the video.
 
 Pass the capture time instead:
 
@@ -166,6 +179,8 @@ Frames must still be pushed in real time. A frame is encoded and sent when it ar
 
 Timestamps must also advance by at least one millisecond from frame to frame. WebRTC drops a frame whose capture time does not move forward.
 :::
+
+`pushFrame(VideoFrame)` stamps its frames with the same clock, so a source may mix the two calls.
 
 Push audio with timestamps from the same clock, as described in [Custom Audio Source](/guide/audio/custom-audio-source), and the two stay in sync on the receiving side.
 
@@ -211,9 +226,3 @@ videoSource.dispose();
 // If you're using a scheduled executor for pushing frames
 videoStreamer.stop();
 ```
-
-## Conclusion
-
-The `CustomVideoSource` provides a flexible way to integrate external video sources with WebRTC. By understanding the video format parameters and properly managing the video frame flow, you can create applications that use custom video from virtually any source.
-
-For more information on video processing and other WebRTC features, refer to the additional guides in the documentation.

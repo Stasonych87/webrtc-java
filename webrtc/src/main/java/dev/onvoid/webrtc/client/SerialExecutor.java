@@ -17,8 +17,10 @@
 package dev.onvoid.webrtc.client;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
 /**
@@ -27,12 +29,28 @@ import java.util.function.Consumer;
  * as if on a thread of their own.
  * <p>
  * A task that throws does not stop the ones after it; its exception goes to
- * the error handler.
+ * the error handler. An error handler that throws stops nothing either, and
+ * however a turn ends, the tasks left get the next one.
+ * <p>
+ * Each turn on the executor runs at most {@link #BATCH_SIZE} tasks and ends
+ * once it has run for {@link #TURN_NANOS}, after which the executor queues
+ * its next turn behind those of the others. A pool with a fixed number of
+ * threads and a FIFO queue thus serves every executor in turn, however slow
+ * the tasks of some of them are, and it holds at most one turn of each.
+ * <p>
+ * When the executor rejects the tasks, or fails in any other way to take
+ * them, they are dropped, and those submitted with a fallback have it run
+ * instead, on the thread that found them rejected. A rejection by an executor
+ * that was not shut down goes to the error handler as well, since it loses
+ * work the application expects.
  */
 final class SerialExecutor implements Executor {
 
 	/** Tasks run per turn, so one busy executor cannot starve the others of a shared pool. */
-	private static final int BATCH_SIZE = 64;
+	static final int BATCH_SIZE = 64;
+
+	/** How long a turn runs tasks before it gives the others of a shared pool a turn. */
+	static final long TURN_NANOS = 10_000_000;
 
 	/** Marks the threads that run event tasks, to catch a future waited on there. */
 	private static final ThreadLocal<int[]> EVENT_DEPTH = new ThreadLocal<int[]>() {
@@ -51,13 +69,15 @@ final class SerialExecutor implements Executor {
 
 	private final String threadName;
 
-	private final ArrayDeque<Runnable> tasks = new ArrayDeque<>();
+	private final Workload workload;
+
+	private final ArrayDeque<Task> tasks = new ArrayDeque<>();
+
+	private final Workload.Backlog backlog = this::count;
 
 	private boolean scheduled;
 
-	private boolean shutdown;
-
-	private volatile Thread runner;
+	private final ThreadLocal<Boolean> running;
 
 
 	/**
@@ -70,7 +90,24 @@ final class SerialExecutor implements Executor {
 	 */
 	SerialExecutor(Executor executor, Consumer<Throwable> errorHandler,
 			boolean eventThread, String threadName) {
+		this(executor, new Workload(System::nanoTime), errorHandler, eventThread, threadName);
+	}
+
+	/**
+	 * @param workload counts the tasks that wait and run, and those dropped
+	 *                 when the executor rejects them while it runs.
+	 */
+	SerialExecutor(Executor executor, Workload workload, Consumer<Throwable> errorHandler,
+			boolean eventThread, String threadName) {
+		this(executor, workload, errorHandler, eventThread, threadName, new ThreadLocal<>());
+	}
+
+	/** Allows a test to hold a turn in its thread-local cleanup while the next starts. */
+	SerialExecutor(Executor executor, Workload workload, Consumer<Throwable> errorHandler,
+			boolean eventThread, String threadName, ThreadLocal<Boolean> running) {
+		this.running = running;
 		this.executor = executor;
+		this.workload = workload;
 		this.errorHandler = errorHandler;
 		this.eventThread = eventThread;
 		this.threadName = threadName;
@@ -84,11 +121,23 @@ final class SerialExecutor implements Executor {
 		return EVENT_DEPTH.get()[0] > 0;
 	}
 
+	/**
+	 * Runs the task, or the fallback should the executor reject it, which
+	 * keeps a future the task would complete from staying open forever.
+	 */
+	void execute(Runnable task, Runnable dropped) {
+		submit(new Task(task, dropped, workload.now()));
+	}
+
 	@Override
 	public void execute(Runnable task) {
+		submit(new Task(task, null, workload.now()));
+	}
+
+	private void submit(Task task) {
 		synchronized (tasks) {
-			if (shutdown) {
-				return;
+			if (tasks.isEmpty()) {
+				workload.waiting(backlog);
 			}
 
 			tasks.add(task);
@@ -107,28 +156,43 @@ final class SerialExecutor implements Executor {
 	 * @return true when the calling thread is running a task of this executor.
 	 */
 	boolean inExecutor() {
-		return runner == Thread.currentThread();
-	}
-
-	/**
-	 * Drops the tasks not yet run and refuses new ones. A task running now
-	 * finishes.
-	 */
-	void shutdown() {
-		synchronized (tasks) {
-			shutdown = true;
-			tasks.clear();
-		}
+		return Boolean.TRUE.equals(running.get());
 	}
 
 	private void schedule() {
 		try {
 			executor.execute(this::drain);
 		}
-		catch (RejectedExecutionException e) {
+		catch (Throwable e) {
+			// Not only a rejection: an executor of the application may throw
+			// anything, and the tasks would wait for a turn that never comes.
+			List<Task> dropped;
+
 			synchronized (tasks) {
 				scheduled = false;
+				dropped = new ArrayList<>(tasks);
 				tasks.clear();
+				workload.idle(backlog);
+			}
+
+			// The runtime's own pools reject only once it has stopped them,
+			// and then nothing is lost that it does not fail itself.
+			if (!(executor instanceof ExecutorService && ((ExecutorService) executor).isShutdown())) {
+				workload.dropped(dropped.size());
+				report(new WebRtcException("The executor rejected " + dropped.size()
+						+ " tasks, which were dropped", e));
+			}
+
+			// In order, as they would have run.
+			for (Task task : dropped) {
+				if (task.dropped != null) {
+					try {
+						task.dropped.run();
+					}
+					catch (Throwable error) {
+						report(error);
+					}
+				}
 			}
 		}
 	}
@@ -136,55 +200,124 @@ final class SerialExecutor implements Executor {
 	private void drain() {
 		Thread thread = Thread.currentThread();
 		String previousName = null;
-
-		if (threadName != null) {
-			previousName = thread.getName();
-			thread.setName(threadName);
-		}
-		if (eventThread) {
-			EVENT_DEPTH.get()[0]++;
-		}
-
-		runner = thread;
-
 		boolean more = true;
 
 		try {
-			for (int i = 0; i < BATCH_SIZE; i++) {
-				Runnable task;
+			if (threadName != null) {
+				previousName = thread.getName();
+				thread.setName(threadName);
+			}
+			if (eventThread) {
+				EVENT_DEPTH.get()[0]++;
+			}
 
-				synchronized (tasks) {
-					task = tasks.poll();
+			Boolean previous = running.get();
+			running.set(true);
 
-					if (task == null) {
-						scheduled = false;
-						more = false;
-						break;
+			try {
+				long start = workload.now();
+
+				for (int i = 0; i < BATCH_SIZE && (i == 0 || workload.now() - start < TURN_NANOS); i++) {
+					Task task;
+
+					synchronized (tasks) {
+						task = tasks.poll();
+
+						if (task == null) {
+							scheduled = false;
+							more = false;
+							break;
+						}
+						if (tasks.isEmpty()) {
+							workload.idle(backlog);
+						}
 					}
+
+					run(task);
+				}
+			}
+			finally {
+				// A previous turn may still be cleaning up after the next
+				// started on another thread. Its marker belongs to this thread only.
+				if (previous == null) {
+					running.remove();
+				}
+				else {
+					running.set(previous);
 				}
 
-				try {
-					task.run();
+				if (eventThread) {
+					EVENT_DEPTH.get()[0]--;
 				}
-				catch (Throwable e) {
-					errorHandler.accept(e);
+				if (previousName != null) {
+					thread.setName(previousName);
 				}
 			}
 		}
-		finally {
-			runner = null;
-
-			if (eventThread) {
-				EVENT_DEPTH.get()[0]--;
-			}
-			if (previousName != null) {
-				thread.setName(previousName);
-			}
+		catch (Throwable e) {
+			// Still scheduled, so without a next turn nothing would start one.
+			report(e);
 		}
 
 		if (more) {
 			// Give the other executors of the pool a turn.
 			schedule();
+		}
+	}
+
+	private void run(Task task) {
+		workload.started();
+
+		try {
+			task.task.run();
+		}
+		catch (Throwable e) {
+			report(e);
+		}
+		finally {
+			workload.finished();
+		}
+	}
+
+	/**
+	 * Hands the error to the error handler. This never throws, since the tasks
+	 * left and the fallbacks still have to run.
+	 */
+	private void report(Throwable error) {
+		try {
+			errorHandler.accept(error);
+		}
+		catch (Throwable e) {
+			WebRtc.uncaught(e);
+		}
+	}
+
+	private void count(Workload.Tally tally) {
+		synchronized (tasks) {
+			Task oldest = tasks.peek();
+
+			if (oldest != null) {
+				tally.add(tasks.size(), oldest.queuedAt);
+			}
+		}
+	}
+
+
+
+	private static final class Task {
+
+		final Runnable task;
+
+		/** Runs instead of the task should the executor reject it, or null. */
+		final Runnable dropped;
+
+		final long queuedAt;
+
+
+		Task(Runnable task, Runnable dropped, long queuedAt) {
+			this.task = task;
+			this.dropped = dropped;
+			this.queuedAt = queuedAt;
 		}
 	}
 }

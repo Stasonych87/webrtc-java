@@ -139,7 +139,7 @@ target_link_libraries(${PROJECT_NAME} webrtc)
 if(APPLE)
     set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS "-x objective-c++")
     target_link_options(${PROJECT_NAME} PRIVATE "-ObjC")
-    target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreAudio" "-framework IOKit" "-framework CoreVideo" "-framework VideoToolbox" "-framework QuartzCore")
+    target_link_libraries(${PROJECT_NAME} "-weak_framework ScreenCaptureKit" "-framework Foundation" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreAudio" "-framework IOKit" "-framework CoreVideo" "-framework VideoToolbox" "-framework QuartzCore")
 elseif(LINUX)
     set(CXX_LIBS "-static-libgcc -stdlib=libc++ -lc++ -lc++abi")
 
@@ -175,6 +175,15 @@ install(FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/webrtc/licenses/LICENSE.md"
     "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/webrtc/licenses/PATENTS"
     DESTINATION "${CMAKE_INSTALL_PREFIX}/META-INF/licenses/webrtc"
+    COMPONENT Runtime
+)
+
+# The project's own license and notice go along as well, at the top of
+# META-INF as in the Java jars.
+install(FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../../LICENSE"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../../NOTICE"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/META-INF"
     COMPONENT Runtime
 )
 

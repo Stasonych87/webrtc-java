@@ -54,7 +54,9 @@ public interface DataChannel extends AutoCloseable {
 	 * @return a future that completes when the message is handed to the
 	 * transport. While a lot of data waits to be sent, the future completes
 	 * only once the backlog shrank, so a loop that waits for each send slows
-	 * down by itself.
+	 * down by itself. The future fails at once with a {@link
+	 * ChannelFullException} when the message would take the backlog beyond
+	 * {@link PeerOptions.Builder#channelSendLimit(long)}.
 	 */
 	CompletableFuture<Void> send(String text);
 
@@ -64,7 +66,7 @@ public interface DataChannel extends AutoCloseable {
 	 * @param data the message.
 	 *
 	 * @return a future that completes when the message is handed to the
-	 * transport.
+	 * transport, or fails as {@link #send(String)} describes.
 	 */
 	CompletableFuture<Void> send(byte[] data);
 
@@ -75,7 +77,7 @@ public interface DataChannel extends AutoCloseable {
 	 * @param data the message.
 	 *
 	 * @return a future that completes when the message is handed to the
-	 * transport.
+	 * transport, or fails as {@link #send(String)} describes.
 	 */
 	CompletableFuture<Void> send(ByteBuffer data);
 
@@ -87,9 +89,12 @@ public interface DataChannel extends AutoCloseable {
 
 	/**
 	 * Calls the handler for each message received. Messages that arrive while
-	 * the channel has no handler are kept for the next one, up to 16 MiB;
-	 * beyond that the oldest are dropped, which is reported to the peer's
-	 * {@link Peer#onError} handlers.
+	 * the channel has no handler are kept for the next one.
+	 * <p>
+	 * Received messages that wait for the handlers, or are kept for one, are
+	 * bounded by {@link PeerOptions.Builder#channelReceiveLimit(long)}. When
+	 * they would exceed it, the channel closes, which the peer's {@link
+	 * Peer#onError} handlers hear of, rather than drop messages unnoticed.
 	 *
 	 * @param handler called on the peer's event thread.
 	 *

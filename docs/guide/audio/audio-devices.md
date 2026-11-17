@@ -1,5 +1,7 @@
 # Audio Devices
 
+<ApiNote client="/guide/client/sending-media#devices" title="Devices in Sending Media" />
+
 This guide focuses on setting up a peer connection with audio device selection capabilities, which allows you to choose specific microphones and speakers for your WebRTC connection.
 
 ## Audio Device Selection
@@ -68,7 +70,6 @@ Pass the configured AudioDeviceModule to the PeerConnectionFactory constructor:
 // Create a PeerConnectionFactory with the custom AudioDeviceModule
 PeerConnectionFactory factory = new PeerConnectionFactory(audioModule);
 ```
-
 
 ## Disabling Audio
 
@@ -140,9 +141,3 @@ MediaDevices.addDeviceChangeListener(event -> {
     // Update UI or device selection as needed
 });
 ```
-
-## Conclusion
-
-This guide has walked you through the process of implementing audio device selection in your WebRTC application.
-By implementing these capabilities, your application can provide users with greater control over their audio experience, accommodating different hardware setups and preferences.
-For more advanced audio processing options, consider exploring the audio processing APIs available in this documentation.

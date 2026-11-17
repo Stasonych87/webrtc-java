@@ -1,5 +1,7 @@
 # RTC Stats
 
+<ApiNote client="/guide/client/statistics" title="Statistics and Call Checks" />
+
 This guide explains how to use WebRTC statistics (RTC Stats) with the webrtc-java library. RTC Stats provide detailed metrics and information about the state and performance of your WebRTC connections.
 
 ## Overview
@@ -389,7 +391,3 @@ Different stat types have different attributes. Here are some common attributes 
 - framesPerSecond (video)
 
 Remember that the available attributes may vary depending on the state of the connection.
-
-## Conclusion
-
-WebRTC statistics provide essential insights into the performance and health of your real-time communications. By leveraging the RTC Stats API in webrtc-java, you can monitor connection quality, diagnose issues, and optimize your application's performance. The ability to collect detailed metrics on packets, jitter, latency, and more allows you to make data-driven decisions.

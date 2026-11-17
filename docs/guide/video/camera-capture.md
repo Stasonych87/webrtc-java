@@ -1,5 +1,7 @@
 # Camera Video
 
+<ApiNote client="/guide/client/sending-media" title="Sending Media" />
+
 This guide focuses on setting up a peer connection with camera video capture capabilities, which allows you to capture and stream video from connected cameras in your WebRTC connection.
 
 ## Camera Video Source Selection
@@ -162,6 +164,44 @@ videoTrack.addSink(localVideoSink);
 videoTrack.removeSink(localVideoSink);
 ```
 
+### Threads and Sink Changes
+
+`addSink` and `removeSink` may be called from any thread, also at the same time, and from within `onVideoFrame`, so a sink can remove itself once it has seen what it wanted:
+
+```java
+videoTrack.addSink(new VideoTrackSink() {
+    @Override
+    public void onVideoFrame(VideoFrame frame) {
+        saveSnapshot(frame);
+        frame.release();
+
+        // Gets no further frames.
+        videoTrack.removeSink(this);
+    }
+});
+```
+
+WebRTC holds a lock while it hands a frame to the sinks, and adding or removing a sink takes the same lock. A change made from within a callback therefore takes effect for the sinks at once. The native sink is added or removed on another thread, right after the callback returned.
+
+Disposing the track is the one thing a callback cannot do: `dispose()` throws an `IllegalStateException` there, and belongs on another thread.
+
+### Sharing Frames Between Sinks
+
+By default, each sink gets an I420 copy of each frame of its own, which it may write into without the other sinks or the encoder seeing it.
+
+That costs a full copy of the pixels per frame and sink: at 1080p and 30 frames a second, about 89 MiB a second for each sink. A sink that only reads the frames can share them instead:
+
+```java
+import dev.onvoid.webrtc.media.video.VideoFrameAccess;
+
+videoTrack.addSink(previewSink, VideoFrameAccess.SHARED);
+```
+
+A shared sink gets the pixels the source handed out, without a copy. The other shared sinks and the encoder use the same pixels.
+
+- The planes of its `NativeI420Buffer` are read-only, so a write throws a `ReadOnlyBufferException`. A sink that wants to change a frame takes a writable copy with `frame.copy()`.
+- The frames may come from a pool of the decoder or capturer, so a shared sink should not hold on to them for long. Keep a copy instead, and release the frame.
+
 ### Receiving Remote Video Frames
 
 To receive frames from a remote peer, you need to add a sink to the remote video track when it's received. This is typically done in the `onTrack` method of your `PeerConnectionObserver`:
@@ -298,7 +338,9 @@ Note that scaling is a computationally expensive operation, especially for high-
 
 ### Changing Frames Before They Are Sent
 
-A `VideoProcessor` sits between a camera or desktop source and its tracks, so it can change what is sent and shown: blur a background, draw an overlay, mirror the picture. The source passes each frame to `onFrameCaptured()` after adapting it to what its tracks ask for, so frames already have the size and rate that will be sent. The processor delivers the frames to send to the sink it gets in `setSink()`: the same frame, a new one, or none to drop it.
+A `VideoProcessor` sits between a camera or desktop source and its tracks, so it can change what is sent and shown: blur a background, draw an overlay, mirror the picture.
+
+The source passes each frame to `onFrameCaptured()` after adapting it to what its tracks ask for, so frames already have the size and rate that will be sent. The processor delivers the frames to send to the sink it gets in `setSink()`: the same frame, a new one, or none to drop it.
 
 ```java
 videoSource.setVideoProcessor(new VideoProcessor() {
@@ -331,7 +373,7 @@ Rules that keep this correct:
 - The pixels of a captured frame may be shared with the source. Write changes into a new buffer, as above, instead of into the captured one.
 - `onFrameCaptured()` runs on the capture thread and holds up capturing while it runs. An exception it throws goes to that thread's uncaught exception handler, and the frame is dropped.
 
-`setVideoProcessor(null)` removes the processor. A `CustomVideoSource` does not take a processor: change the frames before pushing them.
+`setVideoProcessor(null)` removes the processor. Neither that nor `dispose()` waits for a frame the processor is delivering at that moment, which may still reach the tracks; what it delivers later is dropped. A `CustomVideoSource` does not take a processor: change the frames before pushing them.
 
 ## Best Practices
 
@@ -344,9 +386,3 @@ When implementing camera capture in your application, consider these best practi
 5. **Properly manage resources**: Always stop and dispose of video sources when they're no longer needed.
 6. **Handle device changes**: Implement device change listeners to handle cameras being connected or disconnected.
 7. **Consider privacy concerns**: In some applications, you may need to request permission to use the camera.
-
-## Conclusion
-
-This guide has demonstrated how to set up a WebRTC peer connection with camera video capture capabilities and how to receive and process both local and remote video frames.
-
-Camera capture is essential for video conferencing applications, video chat, remote interviews, and any other applications where face-to-face communication is important.

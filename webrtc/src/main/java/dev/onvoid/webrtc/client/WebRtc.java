@@ -18,6 +18,7 @@ package dev.onvoid.webrtc.client;
 
 import static java.util.Objects.requireNonNull;
 
+import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,18 +27,26 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import dev.onvoid.webrtc.PeerConnectionFactory;
+import dev.onvoid.webrtc.internal.Timeouts;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModule;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModuleBase;
 import dev.onvoid.webrtc.media.audio.AudioProcessing;
@@ -65,13 +74,21 @@ import dev.onvoid.webrtc.media.video.codec.HardwareVideoEncoderFactory;
  * }
  * }</pre>
  * <h2>Threads</h2>
- * Every method of this API may be called from any thread, and none waits for a
- * WebRTC thread. The library never runs application code on a thread WebRTC
+ * Every method of this API may be called from any thread. Methods that change
+ * a peer return at once. {@link #createPeer}, the methods of {@link LocalMedia}
+ * that make a track and {@link LocalTrack#setEnabled(boolean)} wait briefly
+ * for a WebRTC thread, and {@link #close()} waits for everything to close.
+ * The library never runs application code on a thread WebRTC
  * needs: what WebRTC reports is copied and queued, then handed to the
  * application on the event thread of the peer it belongs to. The handlers of
  * one peer run one at a time and in order; those of different peers may run
  * at the same time, unless the {@link Builder#eventExecutor(Executor) event
  * executor} is serial, such as the Swing event dispatch thread.
+ * <p>
+ * By default the runtime starts a thread for each peer and each subscription
+ * whose handlers have work. {@link Builder#eventThreads(int)} and {@link
+ * Builder#frameThreads(int)} limit them; what finds no thread then waits its
+ * turn, and {@link #loadStats()} tells how much waits.
  */
 public final class WebRtc implements AutoCloseable {
 
@@ -91,11 +108,36 @@ public final class WebRtc implements AutoCloseable {
 
 	final ScheduledExecutorService timer;
 
+	/**
+	 * The one thread that sends pushed audio, apart from the timer: a slow
+	 * push must not delay the timeouts.
+	 */
+	final ScheduledExecutorService audioPacer;
+
+	/** The time in nanoseconds, as {@link System#nanoTime()}. */
+	final LongSupplier clock;
+
 	final Duration operationTimeout;
+
+	/** How much audio an {@code onAudio} subscription buffers by default. */
+	final Duration audioBuffer;
+
+	/** The tasks of the control executors. */
+	final Workload controlWork;
+
+	/** The tasks of the peers' event executors. */
+	final Workload eventWork;
+
+	/** The frames of the video subscriptions. */
+	final Workload videoWork;
+
+	/** The chunks of the audio subscriptions. */
+	final Workload audioWork;
 
 	private final AudioDeviceModuleBase audioModule;
 
-	private final AudioProcessing audioProcessing;
+	/** Created when the runtime was built with an audio processing config. */
+	final AudioProcessing audioProcessing;
 
 	private final Duration closeTimeout;
 
@@ -109,7 +151,26 @@ public final class WebRtc implements AutoCloseable {
 
 	private final AtomicBoolean closing = new AtomicBoolean();
 
+	/** Never handed out, so that no caller can cancel what the close waits for. */
 	private final CompletableFuture<Void> closed = new CompletableFuture<>();
+
+	/** The futures tracked that are not done, with what fails each. */
+	private final Map<CompletableFuture<?>, Runnable> pending = new ConcurrentHashMap<>();
+
+	/** Set once the control tasks have run, after which none ever runs. */
+	private volatile boolean stopped;
+
+	private final Object httpLock = new Object();
+
+	/**
+	 * The clients of WHIP and WHEP requests, each made for the first request
+	 * it sends: one for those with a bearer token, one that answers proxies
+	 * with credentials for those without. A client cannot do both.
+	 */
+	private final HttpClient[] httpClients = new HttpClient[2];
+
+	/** Set once the runtime has stopped its threads; no request goes out after. */
+	private boolean httpStopped;
 
 
 	private WebRtc(Builder builder) {
@@ -118,18 +179,31 @@ public final class WebRtc implements AutoCloseable {
 		this.audioMode = builder.audioMode;
 		this.operationTimeout = builder.operationTimeout;
 		this.closeTimeout = builder.closeTimeout;
+		this.audioBuffer = builder.audioBuffer;
 		this.errorHandler = builder.errorHandler != null ? builder.errorHandler : WebRtc::uncaught;
 
-		this.controlPool = Executors.newCachedThreadPool(threads("webrtc-client-control-" + runtime + "-"));
-		this.framePool = Executors.newCachedThreadPool(threads("webrtc-client-frames-" + runtime + "-"));
-		this.timer = Executors.newSingleThreadScheduledExecutor(threads("webrtc-client-timer-" + runtime + "-"));
+		this.controlWork = new Workload(builder.clock);
+		this.eventWork = new Workload(builder.clock);
+		this.videoWork = new Workload(builder.clock);
+		this.audioWork = new Workload(builder.clock);
+
+		// Never limited: control tasks wait for other peers' control tasks,
+		// such as a camera switch for every sender to take the new track.
+		this.controlPool = builder.controlPool != null ? builder.controlPool
+				: Executors.newCachedThreadPool(threads("webrtc-client-control-" + runtime + "-"));
+		this.framePool = pool(builder.frameThreads, "webrtc-client-frames-" + runtime + "-");
+		this.timer = builder.timer != null ? builder.timer
+				: scheduler("webrtc-client-timer-" + runtime + "-");
+		this.audioPacer = builder.audioPacer != null ? builder.audioPacer
+				: scheduler("webrtc-client-audio-" + runtime + "-");
+		this.clock = builder.clock;
 
 		if (builder.eventExecutor != null) {
 			this.eventExecutor = builder.eventExecutor;
 			this.ownsEventExecutor = false;
 		}
 		else {
-			this.eventExecutor = Executors.newCachedThreadPool(threads("webrtc-client-events-" + runtime + "-"));
+			this.eventExecutor = pool(builder.eventThreads, "webrtc-client-events-" + runtime + "-");
 			this.ownsEventExecutor = true;
 		}
 
@@ -229,26 +303,7 @@ public final class WebRtc implements AutoCloseable {
 		int number = peerCount.incrementAndGet();
 		String name = options.name != null ? options.name : "peer-" + number;
 
-		PeerImpl peer = new PeerImpl(this, options, name);
-		peers.add(peer);
-
-		try {
-			peer.open();
-		}
-		catch (RuntimeException e) {
-			// Closed before the error goes out, so that nothing of the failed
-			// peer still runs when the runtime closes and frees WebRTC's threads.
-			peers.remove(peer);
-			peer.closeInternal().join();
-			throw e;
-		}
-
-		if (closing.get()) {
-			// The runtime began to close meanwhile and may have missed it.
-			peer.closeInternal();
-		}
-
-		return peer;
+		return open(register(new PeerImpl(this, options, name)));
 	}
 
 	/**
@@ -256,6 +311,33 @@ public final class WebRtc implements AutoCloseable {
 	 */
 	public LocalMedia media() {
 		return media;
+	}
+
+	/**
+	 * Checks before a call that the camera and microphone deliver what a call
+	 * needs and that a connection to a test peer comes up, all at the same
+	 * time. It takes as long as the slowest part: up to the check's timeout
+	 * for the first frame, the first audio and the connection, then its
+	 * duration of measuring. The peers the check creates show among {@link
+	 * #peers()} meanwhile and are closed before the result goes out.
+	 *
+	 * @param check what to check.
+	 *
+	 * @return a future that completes on an event thread of the runtime's
+	 * local media with what the check found, or fails with a {@link
+	 * PeerClosedException} when the runtime closes first. Cancelling it stops
+	 * waiting, not the check.
+	 *
+	 * @throws IllegalArgumentException if a track of the check was not
+	 *                                  created by this runtime.
+	 * @throws ConfigurationException   if WebRTC refuses the network options.
+	 * @throws PeerClosedException      if the runtime is closed.
+	 */
+	public CompletableFuture<CallCheckResult> checkCall(CallCheck check) {
+		requireNonNull(check, "check");
+		checkOpen();
+
+		return media.toPublic(CallChecker.start(this, check));
 	}
 
 	/**
@@ -273,19 +355,40 @@ public final class WebRtc implements AutoCloseable {
 	}
 
 	/**
+	 * Tells how much work waits for the threads of this runtime and how much
+	 * runs, at this moment. Cheap enough to be read every second, from any
+	 * thread.
+	 *
+	 * @return the load of the runtime.
+	 */
+	public LoadStats loadStats() {
+		return new LoadStats(controlWork.snapshot(), eventWork.snapshot(),
+				videoWork.snapshot(), audioWork.snapshot(),
+				poolSize(controlPool), ownsEventExecutor ? poolSize(eventExecutor) : 0,
+				poolSize(framePool));
+	}
+
+	/**
 	 * Closes every peer, then every track, then the factory, and stops the
 	 * threads of this API.
+	 * <p>
+	 * When a peer or track does not close within the close timeout, the
+	 * factory is left undisposed, since disposing it could free what WebRTC's
+	 * threads still use. The future then fails with a {@link WebRtcException}
+	 * that names the cause, as it does when disposing fails.
 	 *
-	 * @return a future that completes once all is closed.
+	 * @return a future that completes once all is closed, or fails when not
+	 * everything could be released. Each call returns a future of its own:
+	 * cancelling it stops waiting, not the close.
 	 */
 	public CompletableFuture<Void> closeAsync() {
-		if (closing.compareAndSet(false, true)) {
-			Thread thread = new Thread(this::shutdown, "webrtc-client-close");
-			thread.setDaemon(true);
-			thread.start();
-		}
+		startClose();
 
-		return closed;
+		// Not on an event thread, so that one may wait for it.
+		CompletableFuture<Void> result = new CompletableFuture<>();
+		closed.whenComplete((ignored, error) -> PeerImpl.complete(result, null, error));
+
+		return result;
 	}
 
 	/**
@@ -300,17 +403,63 @@ public final class WebRtc implements AutoCloseable {
 	 */
 	@Override
 	public void close() {
-		CompletableFuture<Void> future = closeAsync();
+		startClose();
 
 		try {
-			future.get(closeTimeout.toMillis(), TimeUnit.MILLISECONDS);
+			closed.get(Timeouts.toMillis(closeTimeout), TimeUnit.MILLISECONDS);
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
-		catch (Exception e) {
+		catch (ExecutionException e) {
+			// Closing reported its failure already.
+		}
+		catch (TimeoutException e) {
 			reportError(new WebRtcException("The runtime did not close within " + closeTimeout, e));
 		}
+	}
+
+	private void startClose() {
+		if (closing.compareAndSet(false, true)) {
+			Thread thread = new Thread(this::shutdown, "webrtc-client-close");
+			thread.setDaemon(true);
+			thread.start();
+		}
+	}
+
+	/**
+	 * Registers a peer before the runtime is checked again: a runtime that
+	 * begins to close either finds the peer among those it closes and waits
+	 * for it before freeing the factory, or is seen closing here.
+	 */
+	PeerImpl register(PeerImpl peer) {
+		peers.add(peer);
+
+		if (closing.get()) {
+			peers.remove(peer);
+			throw new PeerClosedException("The runtime is closed");
+		}
+
+		return peer;
+	}
+
+	/**
+	 * Creates the connection of a registered peer.
+	 */
+	PeerImpl open(PeerImpl peer) {
+		try {
+			peer.open();
+		}
+		catch (RuntimeException e) {
+			// Closed before the error goes out, so that nothing of the failed
+			// peer still runs when the runtime closes and frees WebRTC's threads.
+			// Closing removes the peer. Once the runtime has stopped its threads
+			// the close cannot run any more, and there is nothing left to wait for.
+			CompletableFuture.anyOf(peer.closeInternal(), closed).join();
+			throw e;
+		}
+
+		return peer;
 	}
 
 	void reportError(Throwable error) {
@@ -336,24 +485,53 @@ public final class WebRtc implements AutoCloseable {
 		return closing.get();
 	}
 
+	/**
+	 * Fails the future, unless it is done by then, once the runtime has
+	 * stopped the threads that could complete it. A task that would have
+	 * completed it is dropped then, and the future would stay open forever.
+	 *
+	 * @param future the future handed out or waited on.
+	 * @param events the event executor the future completes on, so that the
+	 *               failure comes after what is queued there; or null.
+	 */
+	void track(CompletableFuture<?> future, SerialExecutor events) {
+		Runnable fail = () -> future.completeExceptionally(
+				new PeerClosedException("The runtime closed before this completed"));
+		Runnable orphan = events == null ? fail : () -> events.execute(fail, fail);
+
+		pending.put(future, orphan);
+		future.whenComplete((value, error) -> pending.remove(future));
+
+		if (stopped) {
+			orphan.run();
+		}
+	}
+
 	private void shutdown() {
+		Throwable failure = null;
+
 		try {
 			// Peers and tracks created while the runtime closes are closed as
 			// well, so each is waited for until none is left.
-			boolean released = awaitAll(() -> {
+			failure = awaitAll(() -> {
 				List<CompletableFuture<Void>> closing = new ArrayList<>();
 
 				for (PeerImpl peer : new ArrayList<>(peers)) {
 					closing.add(peer.closeInternal());
 				}
 				return closing;
-			}, "peers") && awaitAll(media::closeAll, "local tracks");
+			}, "peers");
 
-			if (!released) {
+			if (failure == null) {
+				failure = awaitAll(media::closeAll, "local tracks");
+			}
+
+			if (failure != null) {
 				// Something may still run on WebRTC's threads, and disposing
 				// the factory would free them under it. Leaking is the lesser harm.
-				reportError(new WebRtcException("The factory of the runtime was left undisposed, "
-						+ "since not everything it created closed within " + closeTimeout));
+				failure = new WebRtcException("The factory of the runtime was left undisposed, "
+						+ "since not everything it created closed", failure);
+				reportError(failure);
 				return;
 			}
 
@@ -376,52 +554,171 @@ public final class WebRtc implements AutoCloseable {
 			}
 		}
 		catch (Throwable e) {
+			failure = e;
 			reportError(e);
 		}
 		finally {
 			shutdownPools();
-			closed.complete(null);
+			failPending();
+
+			if (failure == null) {
+				closed.complete(null);
+			}
+			else {
+				closed.completeExceptionally(failure);
+			}
+		}
+	}
+
+	/**
+	 * Fails the futures that nothing completes any more, once the control
+	 * tasks still queued have run.
+	 */
+	private void failPending() {
+		try {
+			controlPool.awaitTermination(Timeouts.toMillis(closeTimeout), TimeUnit.MILLISECONDS);
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+
+		// Set before the futures are listed: one tracked meanwhile either is
+		// listed or sees it set.
+		stopped = true;
+
+		for (Runnable orphan : new ArrayList<>(pending.values())) {
+			orphan.run();
 		}
 	}
 
 	/**
 	 * Closes what the supplier names, again and again, until it names nothing.
 	 *
-	 * @return false if a round did not finish within the close timeout.
+	 * @return null once all is closed, or why a round did not finish.
 	 */
-	private boolean awaitAll(Supplier<List<CompletableFuture<Void>>> closes, String what) {
+	private WebRtcException awaitAll(Supplier<List<CompletableFuture<Void>>> closes, String what) {
 		for (int round = 0; round < 10; round++) {
 			List<CompletableFuture<Void>> futures = closes.get();
 
 			if (futures.isEmpty()) {
-				return true;
+				return null;
 			}
 
 			try {
 				CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-						.get(closeTimeout.toMillis(), TimeUnit.MILLISECONDS);
+						.get(Timeouts.toMillis(closeTimeout), TimeUnit.MILLISECONDS);
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
-				return false;
+				return new WebRtcException("Closing the " + what + " was interrupted", e);
 			}
-			catch (Exception e) {
-				reportError(new WebRtcException("Closing the " + what + " did not finish within " + closeTimeout, e));
-				return false;
+			catch (TimeoutException e) {
+				return new WebRtcException("Closing the " + what + " did not finish within " + closeTimeout, e);
+			}
+			catch (ExecutionException e) {
+				return new WebRtcException("Closing the " + what + " failed", e.getCause());
 			}
 		}
 
-		return closes.get().isEmpty();
+		return closes.get().isEmpty() ? null
+				: new WebRtcException("The " + what + " kept being created while the runtime closed");
 	}
 
 	private void shutdownPools() {
 		controlPool.shutdown();
 		framePool.shutdown();
 		timer.shutdownNow();
+		audioPacer.shutdownNow();
+		stopHttp();
 
 		if (ownsEventExecutor) {
 			((ExecutorService) eventExecutor).shutdown();
 		}
+	}
+
+	/**
+	 * @param authorizes whether the requests carry credentials of their own,
+	 *                   in the Authorization header.
+	 *
+	 * @return the client of WHIP and WHEP requests.
+	 *
+	 * @throws RejectedExecutionException once the runtime has stopped its
+	 *                                    threads.
+	 */
+	HttpClient httpClient(boolean authorizes) {
+		int index = authorizes ? 0 : 1;
+
+		synchronized (httpLock) {
+			if (httpStopped) {
+				throw new RejectedExecutionException("The runtime is closed");
+			}
+			if (httpClients[index] == null) {
+				httpClients[index] = HttpCall.newClient(!authorizes);
+			}
+
+			return httpClients[index];
+		}
+	}
+
+	private void stopHttp() {
+		HttpClient[] clients;
+
+		synchronized (httpLock) {
+			httpStopped = true;
+			clients = httpClients.clone();
+		}
+
+		for (HttpClient client : clients) {
+			if (client == null) {
+				continue;
+			}
+
+			try {
+				// From Java 21 on, a client ends its threads once the requests
+				// under way are done, each within its timeout. Before, its
+				// threads end once it is collected.
+				HttpClient.class.getMethod("shutdown").invoke(client);
+			}
+			catch (ReflectiveOperationException e) {
+				// Before Java 21.
+			}
+		}
+	}
+
+	/**
+	 * Creates a pool of at most the given number of threads, or an unlimited
+	 * one for 0. A limited pool queues what finds no thread, in order, and
+	 * never rejects it while it runs; since each serial executor has at most
+	 * one turn queued at a time, the queue holds no more than one turn per
+	 * peer or subscription.
+	 */
+	private static ExecutorService pool(int limit, String prefix) {
+		if (limit == 0) {
+			return Executors.newCachedThreadPool(threads(prefix));
+		}
+
+		ThreadPoolExecutor pool = new ThreadPoolExecutor(limit, limit, 60, TimeUnit.SECONDS,
+				new LinkedBlockingQueue<>(), threads(prefix));
+		// Idle threads end, as those of an unlimited pool do.
+		pool.allowCoreThreadTimeOut(true);
+
+		return pool;
+	}
+
+	private static int poolSize(Executor executor) {
+		return executor instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor) executor).getPoolSize() : 0;
+	}
+
+	/**
+	 * A scheduler of one thread that forgets a task once it is cancelled.
+	 * Operations cancel their timeouts as they complete, and without that each
+	 * would stay queued until it was due, for as long as the timeout.
+	 */
+	static ScheduledThreadPoolExecutor scheduler(String prefix) {
+		ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1, threads(prefix));
+		scheduler.setRemoveOnCancelPolicy(true);
+
+		return scheduler;
 	}
 
 	private static ThreadFactory threads(String prefix) {
@@ -434,9 +731,19 @@ public final class WebRtc implements AutoCloseable {
 		};
 	}
 
-	private static void uncaught(Throwable error) {
+	/**
+	 * Hands the error to the uncaught exception handler of this thread. This
+	 * never throws, so that the thread can go on with the work it still has.
+	 */
+	static void uncaught(Throwable error) {
 		Thread thread = Thread.currentThread();
-		thread.getUncaughtExceptionHandler().uncaughtException(thread, error);
+
+		try {
+			thread.getUncaughtExceptionHandler().uncaughtException(thread, error);
+		}
+		catch (Throwable ignored) {
+			// There is no one left to tell, and the JVM ignores it just the same.
+		}
 	}
 
 
@@ -460,7 +767,21 @@ public final class WebRtc implements AutoCloseable {
 
 		private Duration closeTimeout = Duration.ofSeconds(10);
 
+		private Duration audioBuffer = Duration.ofSeconds(5);
+
+		private int eventThreads;
+
+		private int frameThreads;
+
 		private Consumer<PeerConnectionFactory.Builder> factoryCustomizer;
+
+		private ExecutorService controlPool;
+
+		private ScheduledExecutorService timer;
+
+		private ScheduledExecutorService audioPacer;
+
+		private LongSupplier clock = System::nanoTime;
 
 
 		private Builder() {
@@ -513,6 +834,11 @@ public final class WebRtc implements AutoCloseable {
 		 * SwingUtilities::invokeLater} or {@code Platform::runLater}. The
 		 * order of each peer's events is kept whatever the executor. By
 		 * default the runtime runs them on threads of its own.
+		 * <p>
+		 * An executor that rejects work loses the events it rejects, which
+		 * goes to the error handler. The futures those events would have
+		 * completed complete all the same, on the thread that found them
+		 * rejected.
 		 *
 		 * @param executor runs handlers.
 		 *
@@ -520,6 +846,70 @@ public final class WebRtc implements AutoCloseable {
 		 */
 		public Builder eventExecutor(Executor executor) {
 			this.eventExecutor = requireNonNull(executor, "executor");
+			return this;
+		}
+
+		/**
+		 * Limits the threads the runtime runs handlers on, those of peers,
+		 * tracks and channels, future callbacks and {@code Signaling.send}.
+		 * Unlimited by default, so that each peer whose events wait gets a
+		 * thread.
+		 * <p>
+		 * With a limit, the peers take turns: a peer that has events runs a
+		 * few of them, for at most a few milliseconds, then lets the next
+		 * peer in line run, so that slow handlers delay the others but never
+		 * starve them. Nothing is rejected or dropped for the limit; events
+		 * wait, and {@link LoadStats#events()} tells how many and for how
+		 * long. A handler that waits for what another peer's handler does
+		 * may then wait forever, once every thread is taken by such waits.
+		 * <p>
+		 * Applies only to the runtime's own threads, not to an {@link
+		 * #eventExecutor(Executor) executor of the application}.
+		 *
+		 * @param limit the most threads, 1 or more.
+		 *
+		 * @return this builder.
+		 */
+		public Builder eventThreads(int limit) {
+			this.eventThreads = atLeastOne(limit);
+			return this;
+		}
+
+		/**
+		 * Limits the threads that run {@code onFrame} and {@code onAudio}
+		 * handlers, of all subscriptions together, local previews included.
+		 * Unlimited by default, so that each subscription with media waiting
+		 * gets a thread.
+		 * <p>
+		 * With a limit, the subscriptions take turns as the peers do with
+		 * {@link #eventThreads(int)}. A subscription waiting for a thread
+		 * keeps what its {@link FrameDelivery} or audio buffer holds and drops
+		 * the oldest beyond that, which {@link LoadStats#video()} and {@link
+		 * LoadStats#audio()} count.
+		 *
+		 * @param limit the most threads, 1 or more.
+		 *
+		 * @return this builder.
+		 */
+		public Builder frameThreads(int limit) {
+			this.frameThreads = atLeastOne(limit);
+			return this;
+		}
+
+		/**
+		 * Sets how much decoded audio an {@link RemoteAudio#onAudio(Consumer)
+		 * onAudio} subscription keeps for a handler that falls behind. The
+		 * oldest audio beyond that is dropped. A short buffer keeps a live
+		 * stream close to real time; a long one rides out a handler that
+		 * stalls now and then, at the cost of memory, about 190 KiB per second
+		 * of 48 kHz stereo.
+		 *
+		 * @param buffer the most audio that waits; 5 seconds by default.
+		 *
+		 * @return this builder.
+		 */
+		public Builder audioBuffer(Duration buffer) {
+			this.audioBuffer = Timeouts.requirePositive(buffer, "audio buffer");
 			return this;
 		}
 
@@ -545,7 +935,7 @@ public final class WebRtc implements AutoCloseable {
 		 * @return this builder.
 		 */
 		public Builder operationTimeout(Duration timeout) {
-			this.operationTimeout = positive(timeout);
+			this.operationTimeout = Timeouts.requirePositive(timeout, "operation timeout");
 			return this;
 		}
 
@@ -556,7 +946,7 @@ public final class WebRtc implements AutoCloseable {
 		 * @return this builder.
 		 */
 		public Builder closeTimeout(Duration timeout) {
-			this.closeTimeout = positive(timeout);
+			this.closeTimeout = Timeouts.requirePositive(timeout, "close timeout");
 			return this;
 		}
 
@@ -574,22 +964,68 @@ public final class WebRtc implements AutoCloseable {
 		}
 
 		/**
+		 * Replaces the pool the control tasks run on, so that tests decide
+		 * when each of them runs. The runtime shuts it down when it closes.
+		 */
+		Builder controlPool(ExecutorService pool) {
+			this.controlPool = requireNonNull(pool, "pool");
+			return this;
+		}
+
+		/**
+		 * Replaces the timer of timeouts and periodic tasks, so that tests
+		 * decide when each of them fires. The runtime shuts it down when it
+		 * closes.
+		 */
+		Builder timer(ScheduledExecutorService timer) {
+			this.timer = requireNonNull(timer, "timer");
+			return this;
+		}
+
+		/**
+		 * Replaces the thread that sends pushed audio, so that tests decide
+		 * when each chunk is due. The runtime shuts it down when it closes.
+		 */
+		Builder audioPacer(ScheduledExecutorService pacer) {
+			this.audioPacer = requireNonNull(pacer, "pacer");
+			return this;
+		}
+
+		/**
+		 * Replaces the clock of the load statistics, of the turns of the
+		 * executors and of the audio pacing, so that tests decide how much
+		 * time passes.
+		 *
+		 * @param nanos the time in nanoseconds, as {@link System#nanoTime()}.
+		 */
+		Builder clock(LongSupplier nanos) {
+			this.clock = requireNonNull(nanos, "nanos");
+			return this;
+		}
+
+		/**
 		 * @return the runtime.
 		 *
 		 * @throws ConfigurationException if the factory cannot be created.
+		 * @throws IllegalStateException  if both {@link #eventThreads(int)}
+		 *                                and {@link #eventExecutor(Executor)}
+		 *                                were set.
 		 */
 		public WebRtc build() {
+			if (eventExecutor != null && eventThreads != 0) {
+				throw new IllegalStateException("eventThreads limits the runtime's own event threads, "
+						+ "which an eventExecutor replaces; set only one of them");
+			}
+
 			return new WebRtc(this);
 		}
 
-		private static Duration positive(Duration duration) {
-			requireNonNull(duration, "duration");
-
-			if (duration.isNegative() || duration.isZero()) {
-				throw new IllegalArgumentException("The duration must be positive, got " + duration);
+		private static int atLeastOne(int limit) {
+			if (limit < 1) {
+				throw new IllegalArgumentException("The limit must be 1 or more, got " + limit);
 			}
 
-			return duration;
+			return limit;
 		}
 	}
 }

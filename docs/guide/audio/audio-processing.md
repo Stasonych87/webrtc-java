@@ -1,5 +1,7 @@
 # Audio Processing
 
+<ApiNote client="/guide/client-api#the-runtime" title="The Runtime" />
+
 This guide explains how to use the audio processing capabilities provided by the `dev.onvoid.webrtc.media.audio.AudioProcessing` class. The library provides a collection of voice processing components designed for real-time communications software.
 
 ## Overview
@@ -60,6 +62,8 @@ With this approach, the WebRTC framework automatically applies the audio process
 ### Manual Processing
 
 For more control, you can manually process audio streams:
+
+Sample rates in `AudioProcessingStreamConfig` must be positive and divisible by 100 so each 10 ms frame contains a whole number of samples. `AudioConverter` and `AudioResampler` require rates from 100 to 384000 Hz, also divisible by 100; for example, 44100 Hz is accepted and 48099 Hz is rejected.
 
 ```java
 import dev.onvoid.webrtc.media.audio.AudioProcessing;
@@ -296,6 +300,30 @@ audioProcessing.processStream(
     highRateBuffer, highRateConfig, lowRateConfig, lowRateDestBuffer);
 ```
 
+## Speech in the Processed Microphone Audio
+
+A sink on a microphone track gets the audio its senders send, after echo cancellation, noise suppression and gain control, on WebRTC's capture thread. To learn only when speech begins and ends, without handling the audio in Java, let the factory detect speech in that audio in native code and tell a listener:
+
+```java
+VoiceActivityListener listener = speaking -> {
+    // On WebRTC's capture thread: hand it on and return.
+};
+
+factory.addVoiceActivityListener(new VoiceActivityConfig(0.5, Duration.ofMillis(300)), listener);
+
+// Later, to stop it.
+factory.removeVoiceActivityListener(listener);
+```
+
+It works with the `AudioProcessing` the factory was built with, as well as with the one it builds itself.
+
+- All listeners share one detector, and each decides with the threshold and hangover of its own `VoiceActivityConfig`.
+- Audio arrives while the audio device module records, which WebRTC starts once a peer connection sends a microphone track.
+- A listener must not add or remove a listener.
+- Disposing of the factory removes the listeners it still has.
+
+The [Client API](/guide/client/receiving-media#audio) offers the same through `LocalAudio.onVoiceActivity`.
+
 ## Statistics
 
 The `AudioProcessing` class provides statistics about the audio processing performance:
@@ -333,8 +361,4 @@ These statistics are particularly useful for monitoring the performance of echo 
 
 5. **Monitor statistics**: Use the statistics to monitor the performance of echo cancellation and adjust settings if needed.
 
-## Conclusion
-
-The `AudioProcessing` class provides powerful audio processing capabilities for real-time communications. By properly configuring and using these features, you can significantly improve the audio quality in your applications.
-
-Remember that audio processing is CPU-intensive, so consider the performance implications when enabling multiple features, especially on resource-constrained devices.
+6. **Mind the CPU**: Audio processing is CPU-intensive, so consider the performance implications when enabling multiple features, especially on resource-constrained devices.
