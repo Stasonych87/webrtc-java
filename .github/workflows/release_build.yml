@@ -54,7 +54,6 @@ jobs:
       # Maven release:prepare needs a named branch, pinned to the dispatched SHA.
       - name: Git config
         run: |
-#          git switch -C main
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
 
