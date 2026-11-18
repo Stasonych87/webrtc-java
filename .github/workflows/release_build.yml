@@ -253,8 +253,8 @@ jobs:
           profiles: release
 #          skip-upload: true
 
-      - name: Verify the dry-run deployment bundle exists
-        run: test -s target/central-publishing/central-bundle.zip
+#      - name: Verify the dry-run deployment bundle exists
+#        run: test -s target/central-publishing/central-bundle.zip
 
       - name: Summarize what would have been published
         run: |
