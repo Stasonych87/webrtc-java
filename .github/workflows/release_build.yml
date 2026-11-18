@@ -102,7 +102,6 @@ jobs:
 #        env:
 #          OUTPUT: CHANGELOG.md
 
-
       # The docs' versions go into this commit, so that the tagged tree already
       # names the version it releases.
 #      - name: Commit CHANGELOG.md and the docs' versions
@@ -250,7 +249,7 @@ jobs:
           MAVEN_TOKEN: dry-run-must-not-upload
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
         with:
-          version: ${{ steps.release-version.outputs.version }}
+          version: ${{ needs.prepare-release.outputs.release_version }}
           profiles: release
 #          skip-upload: true
 
